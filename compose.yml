@@ -1,0 +1,12 @@
+services:
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: go-app-db
+      POSTGRES_USER: go-app-server
+      POSTGRES_PASSWORD: Password1
+    ports:
+      - "5432:5432"

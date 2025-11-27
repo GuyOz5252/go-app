@@ -9,7 +9,7 @@ import (
 func newServer() *http.Server {
 	mux := chi.NewRouter()
 
-	helloWorld(mux)
+	mapRoutes(mux)
 
 	server := &http.Server{
 		Addr:    ":8080",
