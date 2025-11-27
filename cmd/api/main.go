@@ -1,15 +1,13 @@
 package main
 
-import "log"
+import (
+	"fmt"
+)
 
 func main() {
-	app := &application{
-		config: config{
-			adress: ":8080",
-		},
-	}
+	server := newServer()
 
-	if err := run(app); err != nil {
-		log.Fatal(err)
+	if err := server.ListenAndServe(); err != nil {
+		panic(fmt.Sprintf("http server error: %s", err))
 	}
 }
