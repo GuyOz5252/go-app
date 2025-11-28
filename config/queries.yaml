@@ -1,2 +1,5 @@
 user:
   get_by_id: 'SELECT id, username, email FROM users WHERE id = $1'
+  create: 'INSERT INTO users (username, email) VALUES ($1, $2) RETURNING id'
+  update: 'UPDATE users SET username = $1, email = $2 WHERE id = $3'
+  delete: 'DELETE FROM users WHERE id = $1 RETURNING id'
