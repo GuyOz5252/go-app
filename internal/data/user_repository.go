@@ -4,20 +4,20 @@ import (
 	"database/sql"
 	"errors"
 
-	core "github.com/GuyOz5252/go-app/internal/core"
+	"github.com/GuyOz5252/go-app/internal/core"
 )
 
-type PostgresUserRepository struct {
+type SqlUserRepository struct {
 	db *sql.DB
 }
 
-func NewPostgresUserRepository(db *sql.DB) core.UserRepository {
-	return &PostgresUserRepository{
+func NewSqlUserRepository(db *sql.DB) core.UserRepository {
+	return &SqlUserRepository{
 		db: db,
 	}
 }
 
-func (r *PostgresUserRepository) GetById(id int) (*core.User, error) {
+func (r *SqlUserRepository) GetById(id int) (*core.User, error) {
 	user := &core.User{}
 	query := ""
 	err := r.db.QueryRow(query, id).Scan(&user.Id, &user.Username, &user.Email)
@@ -30,7 +30,7 @@ func (r *PostgresUserRepository) GetById(id int) (*core.User, error) {
 	return user, nil
 }
 
-func (r *PostgresUserRepository) Create(user *core.User) (int, error) {
+func (r *SqlUserRepository) Create(user *core.User) (int, error) {
 	var userId int
 	err := r.db.QueryRow("", user.Username, user.Email).Scan(&userId)
 	if err != nil {
@@ -40,7 +40,7 @@ func (r *PostgresUserRepository) Create(user *core.User) (int, error) {
 	return userId, nil
 }
 
-func (r *PostgresUserRepository) Update(user *core.User) error {
+func (r *SqlUserRepository) Update(user *core.User) error {
 	if user == nil {
         return errors.New("user cannot be nil")
     }
@@ -54,7 +54,7 @@ func (r *PostgresUserRepository) Update(user *core.User) error {
     return err
 }
 
-func (r *PostgresUserRepository) Delete(id int) error {
+func (r *SqlUserRepository) Delete(id int) error {
 	var userId int
     err := r.db.QueryRow("", id).Scan(&userId)
 	if (err == sql.ErrNoRows) {
