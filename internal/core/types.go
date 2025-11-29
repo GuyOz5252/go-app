@@ -3,6 +3,7 @@ package core
 import "errors"
 
 var ErrNotFound = errors.New("not found")
+var ErrQueryNotConfigured = errors.New("query not configured")
 var ErrUsernameConflict = errors.New("username already exists")
 var ErrEmailConflict = errors.New("email already exists")
 
