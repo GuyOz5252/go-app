@@ -13,7 +13,13 @@ func (app *application) newServer() *http.Server {
 	// TODO: configure this to my logger
 	mux.Use(middleware.Logger)
 
-	mapRoutes(app, mux)
+	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("healthy"))
+	})
+
+	mux.Route("/api", func(r chi.Router) {
+		r.Mount("/users", mountUserRoutes(app))
+	})
 
 	server := &http.Server{
 		Addr:    app.config.address,

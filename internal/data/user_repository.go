@@ -19,7 +19,7 @@ func NewSqlUserRepository(db *sql.DB) core.UserRepository {
 
 func (r *SqlUserRepository) GetById(id int) (*core.User, error) {
 	user := &core.User{}
-	query := ""
+	query := "SELECT id, username, email FROM users WHERE id = $1"
 	err := r.db.QueryRow(query, id).Scan(&user.Id, &user.Username, &user.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -32,7 +32,7 @@ func (r *SqlUserRepository) GetById(id int) (*core.User, error) {
 
 func (r *SqlUserRepository) Create(user *core.User) (int, error) {
 	var userId int
-	err := r.db.QueryRow("", user.Username, user.Email).Scan(&userId)
+	err := r.db.QueryRow("INSERT INTO users (username, email) VALUES ($1, $2) RETURNING id", user.Username, user.Email).Scan(&userId)
 	if err != nil {
 		return -1, err
 	}
@@ -42,24 +42,24 @@ func (r *SqlUserRepository) Create(user *core.User) (int, error) {
 
 func (r *SqlUserRepository) Update(user *core.User) error {
 	if user == nil {
-        return errors.New("user cannot be nil")
-    }
+		return errors.New("user cannot be nil")
+	}
 
 	var userId int
-    err := r.db.QueryRow("", user.Username, user.Email, user.Id).Scan(&userId)
-	if (err == sql.ErrNoRows) {
+	err := r.db.QueryRow("", user.Username, user.Email, user.Id).Scan(&userId)
+	if err == sql.ErrNoRows {
 		return core.ErrNotFound
 	}
 
-    return err
+	return err
 }
 
 func (r *SqlUserRepository) Delete(id int) error {
 	var userId int
-    err := r.db.QueryRow("", id).Scan(&userId)
-	if (err == sql.ErrNoRows) {
+	err := r.db.QueryRow("", id).Scan(&userId)
+	if err == sql.ErrNoRows {
 		return core.ErrNotFound
 	}
 
-    return err
+	return err
 }
