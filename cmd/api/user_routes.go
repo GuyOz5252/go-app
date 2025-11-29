@@ -2,15 +2,18 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/GuyOz5252/go-app/internal/core"
 	"github.com/GuyOz5252/go-app/internal/services"
-	"github.com/GuyOz5252/go-app/pkg"
+	api "github.com/GuyOz5252/go-app/pkg/api_utils"
 	"github.com/go-chi/chi/v5"
 )
+
+type CreateUserResponse struct {
+	UserId int `json:"userId"`
+}
 
 var userService *services.UserService
 
@@ -28,25 +31,21 @@ func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 	userIdString := chi.URLParam(r, "id")
 	userId, err := strconv.Atoi(userIdString)
 	if err != nil {
-		pkg.ApiError(w, r, http.StatusBadRequest, "invalid user id", err.Error())
+		api.ApiError(w, r, http.StatusBadRequest, "invalid user id", err.Error())
 		return
 	}
 
 	user, err := userService.GetById(userId)
 	if err != nil {
 		if err == core.ErrNotFound {
-			pkg.ApiError(w, r, http.StatusNotFound, "user not found", err.Error())
+			api.ApiError(w, r, http.StatusNotFound, "user not found", err.Error())
 			return
 		}
-		pkg.ApiError(w, r, http.StatusInternalServerError, "failed to get user", err.Error())
+		api.ApiError(w, r, http.StatusInternalServerError, "failed to get user", err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(user); err != nil {
-		pkg.ApiError(w, r, http.StatusInternalServerError, "failed to encode user", err.Error())
-		return
-	}
+	api.ApiResponse(w, r, http.StatusOK, user)
 }
 
 func createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,9 +57,20 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	userId, err := userService.Create(&user)
 	if err != nil {
+		if err == core.ErrUsernameConflict {
+			api.ApiError(w, r, http.StatusConflict, "username already exists", err.Error())
+			return
+		}
+		if err == core.ErrEmailConflict {
+			api.ApiError(w, r, http.StatusConflict, "email already exists", err.Error())
+			return
+		}
+
 		http.Error(w, "failed to create user", http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, "{userId: \"%d\"}", userId)
+	api.ApiResponse(w, r, http.StatusOK, CreateUserResponse{
+		UserId: userId,
+	})
 }

@@ -19,5 +19,21 @@ func (s *UserService) GetById(id int) (*core.User, error) {
 }
 
 func (s *UserService) Create(user *core.User) (int, error) {
+	usernameExists, err := s.userRepository.ExistsByUsername(user.Username)
+	if err != nil {
+		return -1, err
+	}
+	if usernameExists {
+		return -1, core.ErrUsernameConflict
+	}
+
+	emailExists, err := s.userRepository.ExistsByEmail(user.Email)
+	if err != nil {
+		return -1, err
+	}
+	if emailExists {
+		return -1, core.ErrEmailConflict
+	}
+
 	return s.userRepository.Create(user)
 }
