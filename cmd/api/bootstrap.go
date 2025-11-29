@@ -9,17 +9,20 @@ import (
 )
 
 func bootstrap() *application {
-	db, err := data.NewPostgresSqlDb("postgres://go-app-server:Password1@localhost:5432/go-app-db?sslmode=disable")
+	config, err := pkg.LoadConfig[Config]("./../../config/config.yaml")
+	if err != nil {
+		panic(fmt.Sprintf("failed to load config: %s", err))
+	}
+	db, err := data.NewPostgresSqlDb(config.ConnectionString)
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to database: %s", err))
 	}
-	userRepository := data.NewSqlUserRepository(db)
+
+	userRepository := data.NewSqlUserRepository(db, &config.Queries.User)
 	app := &application{
 		logger: pkg.NewLogger(),
-		config: &config{
-			address: ":8080",
-		},
-		UserService: services.NewUserService(userRepository),
+		config: &config,
+		userService: services.NewUserService(userRepository),
 	}
 
 	return app

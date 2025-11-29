@@ -7,14 +7,18 @@ import (
 	"github.com/GuyOz5252/go-app/internal/services"
 )
 
-type config struct {
-	address string
+type Config struct {
+	Address          string `yaml:"address"`
+	ConnectionString string `yaml:"connection-string"`
+	Queries          struct {
+		User map[string]string `yaml:"user"`
+	} `yaml:"queries"`
 }
 
 type application struct {
 	logger      *slog.Logger
-	config      *config
-	UserService *services.UserService
+	config      *Config
+	userService *services.UserService
 }
 
 func main() {

@@ -22,7 +22,7 @@ func (app *application) newServer() *http.Server {
 	})
 
 	server := &http.Server{
-		Addr:    app.config.address,
+		Addr:    app.config.Address,
 		Handler: mux,
 	}
 

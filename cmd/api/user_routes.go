@@ -18,7 +18,7 @@ type CreateUserResponse struct {
 var userService *services.UserService
 
 func mountUserRoutes(app *application) http.Handler {
-	userService = app.UserService
+	userService = app.userService
 	mux := chi.NewRouter()
 
 	mux.Post("/", createUserHandler)
