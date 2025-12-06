@@ -10,16 +10,10 @@ import (
 func (app *application) newServer() *http.Server {
 	mux := chi.NewRouter()
 
-	// TODO: configure this to my logger
 	mux.Use(middleware.Logger)
+	mux.Use(middleware.Recoverer)
 
-	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("healthy"))
-	})
-
-	mux.Route("/api", func(r chi.Router) {
-		r.Mount("/users", mountUserRoutes(app))
-	})
+	app.addRoutes(mux)
 
 	server := &http.Server{
 		Addr:    app.config.Address,

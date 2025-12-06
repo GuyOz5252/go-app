@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/GuyOz5252/go-app/internal/data"
 	"github.com/GuyOz5252/go-app/internal/services"
+	"github.com/GuyOz5252/go-app/pkg"
 )
 
 type Config struct {
@@ -21,8 +23,33 @@ type application struct {
 	userService *services.UserService
 }
 
+func newApplication() (*application, error) {
+	config, err := pkg.LoadConfig[Config]("./../../config/config.yaml")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+	
+	db, err := data.NewPostgresSqlDb(config.ConnectionString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	userRepository := data.NewSqlUserRepository(db, &config.Queries.User)
+	app := &application{
+		logger:      pkg.NewLogger(),
+		config:      &config,
+		userService: services.NewUserService(userRepository),
+	}
+
+	return app, nil
+}
+
 func main() {
-	app := bootstrap()
+	app, err := newApplication()
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize application: %s", err))
+	}
+
 	server := app.newServer()
 
 	// TODO: graceful shutdown

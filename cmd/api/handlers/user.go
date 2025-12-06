@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"encoding/json"
@@ -11,23 +11,21 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+type UserHandler struct {
+	userService *services.UserService
+}
+
+func NewUserHandler(userService *services.UserService) *UserHandler {
+	return &UserHandler{
+		userService: userService,
+	}
+}
+
 type CreateUserResponse struct {
 	UserId int `json:"userId"`
 }
 
-var userService *services.UserService
-
-func mountUserRoutes(app *application) http.Handler {
-	userService = app.userService
-	mux := chi.NewRouter()
-
-	mux.Post("/", createUserHandler)
-	mux.Get("/{id}", getUserByIdHandler)
-
-	return mux
-}
-
-func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	userIdString := chi.URLParam(r, "id")
 	userId, err := strconv.Atoi(userIdString)
 	if err != nil {
@@ -35,7 +33,7 @@ func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := userService.GetById(userId)
+	user, err := h.userService.GetById(userId)
 	if err != nil {
 		if err == core.ErrNotFound {
 			api.ApiError(w, r, http.StatusNotFound, "user not found", err.Error())
@@ -48,14 +46,14 @@ func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 	api.ApiResponse(w, r, http.StatusOK, user)
 }
 
-func createUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var user core.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "invalid request payload", http.StatusBadRequest)
+		api.ApiError(w, r, http.StatusBadRequest, "invalid request payload", err.Error())
 		return
 	}
 
-	userId, err := userService.Create(&user)
+	userId, err := h.userService.Create(&user)
 	if err != nil {
 		if err == core.ErrUsernameConflict {
 			api.ApiError(w, r, http.StatusConflict, "username already exists", err.Error())
@@ -66,11 +64,11 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		http.Error(w, "failed to create user", http.StatusInternalServerError)
+		api.ApiError(w, r, http.StatusInternalServerError, "failed to create user", err.Error())
 		return
 	}
 
-	api.ApiResponse(w, r, http.StatusOK, CreateUserResponse{
+	api.ApiResponse(w, r, http.StatusCreated, CreateUserResponse{
 		UserId: userId,
 	})
 }
