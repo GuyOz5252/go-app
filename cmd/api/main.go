@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/GuyOz5252/go-app/internal/data"
 	"github.com/GuyOz5252/go-app/internal/services"
@@ -24,11 +25,15 @@ type application struct {
 }
 
 func newApplication() (*application, error) {
-	config, err := pkg.LoadConfig[Config]("./../../config/config.yaml")
+	configPath, ok := os.LookupEnv("CONFIG_PATH")
+	if !ok {
+		configPath = "./config/config.yaml"
+	}
+	config, err := pkg.LoadConfig[Config](configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
-	
+
 	db, err := data.NewPostgresSqlDb(config.ConnectionString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
