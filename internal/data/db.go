@@ -8,11 +8,11 @@ import (
 func NewPostgresSqlDb(connectionString string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", connectionString)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if err := db.Ping(); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return db, nil
