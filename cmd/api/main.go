@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/GuyOz5252/go-app/internal/data"
 	"github.com/GuyOz5252/go-app/internal/services"
@@ -57,9 +61,25 @@ func main() {
 
 	server := app.newServer()
 
-	// TODO: graceful shutdown
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
 	app.logger.Info("Listening on port 8080")
-	if err := server.ListenAndServe(); err != nil {
-		panic(fmt.Sprintf("http server error: %s", err))
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(fmt.Sprintf("http server error: %s", err))
+		}
+	}()
+
+	<-ctx.Done()
+	app.logger.Info("shutting down server...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		app.logger.Error("server forced to shutdown", "error", err)
 	}
+
+	app.logger.Info("server exited")
 }

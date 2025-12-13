@@ -33,7 +33,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.userService.GetById(userId)
+	user, err := h.userService.GetById(r.Context(), userId)
 	if err != nil {
 		if err == core.ErrNotFound {
 			api.ApiError(w, r, http.StatusNotFound, "user not found", err.Error())
@@ -53,7 +53,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := h.userService.Create(&user)
+	userId, err := h.userService.Create(r.Context(), &user)
 	if err != nil {
 		if err == core.ErrUsernameConflict {
 			api.ApiError(w, r, http.StatusConflict, "username already exists", err.Error())

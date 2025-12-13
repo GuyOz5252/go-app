@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+
 	"github.com/GuyOz5252/go-app/internal/core"
 )
 
@@ -14,12 +16,12 @@ func NewUserService(userRepository core.UserRepository) *UserService {
 	}
 }
 
-func (s *UserService) GetById(id int) (*core.User, error) {
-	return s.userRepository.GetById(id)
+func (s *UserService) GetById(ctx context.Context, id int) (*core.User, error) {
+	return s.userRepository.GetById(ctx, id)
 }
 
-func (s *UserService) Create(user *core.User) (int, error) {
-	usernameExists, err := s.userRepository.ExistsByUsername(user.Username)
+func (s *UserService) Create(ctx context.Context, user *core.User) (int, error) {
+	usernameExists, err := s.userRepository.ExistsByUsername(ctx, user.Username)
 	if err != nil {
 		return -1, err
 	}
@@ -27,7 +29,7 @@ func (s *UserService) Create(user *core.User) (int, error) {
 		return -1, core.ErrUsernameConflict
 	}
 
-	emailExists, err := s.userRepository.ExistsByEmail(user.Email)
+	emailExists, err := s.userRepository.ExistsByEmail(ctx, user.Email)
 	if err != nil {
 		return -1, err
 	}
@@ -35,5 +37,5 @@ func (s *UserService) Create(user *core.User) (int, error) {
 		return -1, core.ErrEmailConflict
 	}
 
-	return s.userRepository.Create(user)
+	return s.userRepository.Create(ctx, user)
 }

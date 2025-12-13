@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 
@@ -8,24 +9,24 @@ import (
 )
 
 type SqlUserRepository struct {
-	db *sql.DB
+	db      *sql.DB
 	queries *map[string]string
 }
 
 func NewSqlUserRepository(db *sql.DB, queries *map[string]string) core.UserRepository {
 	return &SqlUserRepository{
-		db: db,
+		db:      db,
 		queries: queries,
 	}
 }
 
-func (r *SqlUserRepository) GetById(id int) (*core.User, error) {
+func (r *SqlUserRepository) GetById(ctx context.Context, id int) (*core.User, error) {
 	user := &core.User{}
 	query, ok := (*r.queries)["get_by_id"]
 	if !ok {
 		return nil, core.ErrQueryNotConfigured
 	}
-	err := r.db.QueryRow(query, id).Scan(&user.Id, &user.Username, &user.Email)
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&user.Id, &user.Username, &user.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, core.ErrNotFound
@@ -35,20 +36,20 @@ func (r *SqlUserRepository) GetById(id int) (*core.User, error) {
 	return user, nil
 }
 
-func (r *SqlUserRepository) Create(user *core.User) (int, error) {
+func (r *SqlUserRepository) Create(ctx context.Context, user *core.User) (int, error) {
 	var userId int
 	query, ok := (*r.queries)["create"]
 	if !ok {
 		return -1, core.ErrQueryNotConfigured
 	}
-	if err := r.db.QueryRow(query, user.Username, user.Email).Scan(&userId); err != nil {
+	if err := r.db.QueryRowContext(ctx, query, user.Username, user.Email).Scan(&userId); err != nil {
 		return -1, err
 	}
 	user.Id = userId
 	return userId, nil
 }
 
-func (r *SqlUserRepository) Update(user *core.User) error {
+func (r *SqlUserRepository) Update(ctx context.Context, user *core.User) error {
 	if user == nil {
 		return errors.New("user cannot be nil")
 	}
@@ -58,7 +59,7 @@ func (r *SqlUserRepository) Update(user *core.User) error {
 	if !ok {
 		return core.ErrQueryNotConfigured
 	}
-	err := r.db.QueryRow(query, user.Username, user.Email, user.Id).Scan(&userId)
+	err := r.db.QueryRowContext(ctx, query, user.Username, user.Email, user.Id).Scan(&userId)
 	if err == sql.ErrNoRows {
 		return core.ErrNotFound
 	}
@@ -66,13 +67,13 @@ func (r *SqlUserRepository) Update(user *core.User) error {
 	return err
 }
 
-func (r *SqlUserRepository) Delete(id int) error {
+func (r *SqlUserRepository) Delete(ctx context.Context, id int) error {
 	var userId int
 	query, ok := (*r.queries)["delete"]
 	if !ok {
 		return core.ErrQueryNotConfigured
 	}
-	err := r.db.QueryRow(query, id).Scan(&userId)
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&userId)
 	if err == sql.ErrNoRows {
 		return core.ErrNotFound
 	}
@@ -80,13 +81,13 @@ func (r *SqlUserRepository) Delete(id int) error {
 	return err
 }
 
-func (r *SqlUserRepository) ExistsByUsername(username string) (bool, error) {
+func (r *SqlUserRepository) ExistsByUsername(ctx context.Context, username string) (bool, error) {
 	var exists bool
 	query, ok := (*r.queries)["exists_by_username"]
 	if !ok {
 		return false, core.ErrQueryNotConfigured
 	}
-	err := r.db.QueryRow(query, username).Scan(&exists)
+	err := r.db.QueryRowContext(ctx, query, username).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
@@ -94,13 +95,13 @@ func (r *SqlUserRepository) ExistsByUsername(username string) (bool, error) {
 	return exists, nil
 }
 
-func (r *SqlUserRepository) ExistsByEmail(email string) (bool, error) {
+func (r *SqlUserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	var exists bool
 	query, ok := (*r.queries)["exists_by_email"]
 	if !ok {
 		return false, core.ErrQueryNotConfigured
 	}
-	err := r.db.QueryRow(query, email).Scan(&exists)
+	err := r.db.QueryRowContext(ctx, query, email).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
