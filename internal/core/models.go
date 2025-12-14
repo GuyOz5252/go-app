@@ -1,9 +1,10 @@
 package core
 
 type User struct {
-	Id       int    `json:"id"`
-	Username string `json:"name"`
-	Email    string `json:"email"`
+	Id           int    `json:"id"`
+	Username     string `json:"name"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"-"`
 }
 
 type Group struct {

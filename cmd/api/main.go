@@ -12,11 +12,13 @@ import (
 	"github.com/GuyOz5252/go-app/internal/data"
 	"github.com/GuyOz5252/go-app/internal/services"
 	"github.com/GuyOz5252/go-app/pkg"
+	"github.com/go-chi/jwtauth/v5"
 )
 
 type Config struct {
 	Address          string `yaml:"address"`
 	ConnectionString string `yaml:"connection-string"`
+	JWTSecret        string `yaml:"jwt-secret"`
 	Queries          struct {
 		User map[string]string `yaml:"user"`
 	} `yaml:"queries"`
@@ -25,6 +27,7 @@ type Config struct {
 type application struct {
 	logger      *slog.Logger
 	config      *Config
+	tokenAuth   *jwtauth.JWTAuth
 	userService *services.UserService
 }
 
@@ -44,9 +47,12 @@ func newApplication() (*application, error) {
 	}
 
 	userRepository := data.NewSqlUserRepository(db, &config.Queries.User)
+	tokenAuth := jwtauth.New("HS256", []byte(config.JWTSecret), nil)
+
 	app := &application{
 		logger:      pkg.NewLogger(),
 		config:      &config,
+		tokenAuth:   tokenAuth,
 		userService: services.NewUserService(userRepository),
 	}
 

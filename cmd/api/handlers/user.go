@@ -5,24 +5,44 @@ import (
 	"net/http"
 	"strconv"
 
+	"time"
+
 	"github.com/GuyOz5252/go-app/internal/core"
 	"github.com/GuyOz5252/go-app/internal/services"
 	api "github.com/GuyOz5252/go-app/pkg/api_utils"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
 )
 
 type UserHandler struct {
 	userService *services.UserService
+	tokenAuth   *jwtauth.JWTAuth
 }
 
-func NewUserHandler(userService *services.UserService) *UserHandler {
+func NewUserHandler(userService *services.UserService, tokenAuth *jwtauth.JWTAuth) *UserHandler {
 	return &UserHandler{
 		userService: userService,
+		tokenAuth:   tokenAuth,
 	}
 }
 
-type CreateUserResponse struct {
+type RegisterResponse struct {
 	UserId int `json:"userId"`
+}
+
+type RegisterRequest struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
 }
 
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -47,13 +67,13 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var user core.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var req RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		api.ApiError(w, r, http.StatusBadRequest, "invalid request payload", err.Error())
 		return
 	}
 
-	userId, err := h.userService.Create(r.Context(), &user)
+	userId, err := h.userService.Create(r.Context(), req.Username, req.Email, req.Password)
 	if err != nil {
 		if err == core.ErrUsernameConflict {
 			api.ApiError(w, r, http.StatusConflict, "username already exists", err.Error())
@@ -68,7 +88,41 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	api.ApiResponse(w, r, http.StatusCreated, CreateUserResponse{
+	api.ApiResponse(w, r, http.StatusCreated, RegisterResponse{
 		UserId: userId,
+	})
+}
+
+func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		api.ApiError(w, r, http.StatusBadRequest, "invalid request payload", err.Error())
+		return
+	}
+
+	user, err := h.userService.Login(r.Context(), req.Email, req.Password)
+	if err != nil {
+		if err == core.ErrInvalidCredentials {
+			api.ApiError(w, r, http.StatusUnauthorized, "invalid credentials", err.Error())
+			return
+		}
+		api.ApiError(w, r, http.StatusInternalServerError, "failed to login", err.Error())
+		return
+	}
+
+	claims := map[string]any{
+		"userId": user.Id,
+	}
+	jwtauth.SetExpiryIn(claims, 72*time.Hour)
+	jwtauth.SetIssuedNow(claims)
+
+	_, tokenString, err := h.tokenAuth.Encode(claims)
+	if err != nil {
+		api.ApiError(w, r, http.StatusInternalServerError, "failed to generate token", err.Error())
+		return
+	}
+
+	api.ApiResponse(w, r, http.StatusOK, LoginResponse{
+		Token: tokenString,
 	})
 }

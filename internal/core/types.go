@@ -9,6 +9,7 @@ var ErrNotFound = errors.New("not found")
 var ErrQueryNotConfigured = errors.New("query not configured")
 var ErrUsernameConflict = errors.New("username already exists")
 var ErrEmailConflict = errors.New("email already exists")
+var ErrInvalidCredentials = errors.New("invalid credentials")
 
 type UserRepository interface {
 	GetById(ctx context.Context, id int) (*User, error)
@@ -17,4 +18,5 @@ type UserRepository interface {
 	Delete(ctx context.Context, id int) error
 	ExistsByUsername(ctx context.Context, username string) (bool, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
 }
