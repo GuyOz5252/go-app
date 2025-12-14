@@ -18,17 +18,21 @@ import (
 type Config struct {
 	Address          string `yaml:"address"`
 	ConnectionString string `yaml:"connection-string"`
-	JWTSecret        string `yaml:"jwt-secret"`
-	Queries          struct {
+	Auth             struct {
+		JWTSecret       string `yaml:"jwt-secret"`
+		TokenExpiration string `yaml:"token-expiration"`
+	} `yaml:"auth"`
+	Queries struct {
 		User map[string]string `yaml:"user"`
 	} `yaml:"queries"`
 }
 
 type application struct {
-	logger      *slog.Logger
-	config      *Config
-	tokenAuth   *jwtauth.JWTAuth
-	userService *services.UserService
+	logger          *slog.Logger
+	config          *Config
+	tokenAuth       *jwtauth.JWTAuth
+	userService     *services.UserService
+	tokenExpiration time.Duration
 }
 
 func newApplication() (*application, error) {
@@ -47,13 +51,19 @@ func newApplication() (*application, error) {
 	}
 
 	userRepository := data.NewSqlUserRepository(db, &config.Queries.User)
-	tokenAuth := jwtauth.New("HS256", []byte(config.JWTSecret), nil)
+	tokenAuth := jwtauth.New("HS256", []byte(config.Auth.JWTSecret), nil)
+
+	tokenExpiration, err := time.ParseDuration(config.Auth.TokenExpiration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token expiration: %w", err)
+	}
 
 	app := &application{
-		logger:      pkg.NewLogger(),
-		config:      &config,
-		tokenAuth:   tokenAuth,
-		userService: services.NewUserService(userRepository),
+		logger:          pkg.NewLogger(),
+		config:          &config,
+		tokenAuth:       tokenAuth,
+		userService:     services.NewUserService(userRepository),
+		tokenExpiration: tokenExpiration,
 	}
 
 	return app, nil

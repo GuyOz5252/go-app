@@ -1,6 +1,8 @@
 address: ':8080'
 connection-string: 'postgres://go-app-server:Password1@localhost:5432/go-app-db?sslmode=disable'
-jwt-secret: 'super-secret-key-change-me'
+auth:
+  jwt-secret: 'super-secret-key-change-me'
+  token-expiration: '72h'
 queries:
   user:
     get_by_id: 'SELECT id, username, email, password_hash FROM users WHERE id = $1'

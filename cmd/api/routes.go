@@ -10,7 +10,7 @@ func (app *application) addRoutes(mux *chi.Mux) {
 	healthHandler := handlers.NewHealthHandler()
 	mux.Get("/", healthHandler.Check)
 
-	userHandler := handlers.NewUserHandler(app.userService, app.tokenAuth)
+	userHandler := handlers.NewUserHandler(app.userService, app.tokenAuth, app.tokenExpiration)
 	mux.Route("/users", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(jwtauth.Verifier(app.tokenAuth))

@@ -15,14 +15,16 @@ import (
 )
 
 type UserHandler struct {
-	userService *services.UserService
-	tokenAuth   *jwtauth.JWTAuth
+	userService     *services.UserService
+	tokenAuth       *jwtauth.JWTAuth
+	tokenExpiration time.Duration
 }
 
-func NewUserHandler(userService *services.UserService, tokenAuth *jwtauth.JWTAuth) *UserHandler {
+func NewUserHandler(userService *services.UserService, tokenAuth *jwtauth.JWTAuth, tokenExpiration time.Duration) *UserHandler {
 	return &UserHandler{
-		userService: userService,
-		tokenAuth:   tokenAuth,
+		userService:     userService,
+		tokenAuth:       tokenAuth,
+		tokenExpiration: tokenExpiration,
 	}
 }
 
@@ -113,7 +115,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	claims := map[string]any{
 		"userId": user.Id,
 	}
-	jwtauth.SetExpiryIn(claims, 72*time.Hour)
+	jwtauth.SetExpiryIn(claims, h.tokenExpiration)
 	jwtauth.SetIssuedNow(claims)
 
 	_, tokenString, err := h.tokenAuth.Encode(claims)
