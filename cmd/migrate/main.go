@@ -31,7 +31,7 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	m, err := migrate.New("file://db/migrations", cfg.ConnectionString)
+	m, err := migrate.New("file://migrations", cfg.ConnectionString)
 	if err != nil {
 		log.Fatalf("Failed to create migration instance: %v", err)
 	}
