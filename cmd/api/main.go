@@ -36,11 +36,7 @@ type application struct {
 }
 
 func newApplication() (*application, error) {
-	configPath, ok := os.LookupEnv("CONFIG_PATH")
-	if !ok {
-		configPath = "./config/config.yaml"
-	}
-	config, err := pkg.LoadConfig[Config](configPath)
+	config, err := pkg.LoadConfig[Config]("../../config")
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
@@ -60,7 +56,7 @@ func newApplication() (*application, error) {
 
 	app := &application{
 		logger:          pkg.NewLogger(),
-		config:          &config,
+		config:          config,
 		tokenAuth:       tokenAuth,
 		userService:     services.NewUserService(userRepository),
 		tokenExpiration: tokenExpiration,
@@ -80,7 +76,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	app.logger.Info("Listening on port 8080")
+	app.logger.Info("Listening on port 8080", slog.String("address", app.config.Address))
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			panic(fmt.Sprintf("http server error: %s", err))

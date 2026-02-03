@@ -21,12 +21,7 @@ func main() {
 	}
 	cmd := os.Args[1]
 
-	configPath := "./config/config.yaml"
-	if envPath := os.Getenv("CONFIG_PATH"); envPath != "" {
-		configPath = envPath
-	}
-
-	cfg, err := pkg.LoadConfig[Config](configPath)
+	cfg, err := pkg.LoadConfig[Config]("../../config")
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
