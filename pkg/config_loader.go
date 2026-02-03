@@ -12,7 +12,7 @@ func LoadConfig[T any](path string) (*T, error) {
 
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
-	// v.AddConfigPath(path)
+	v.AddConfigPath(path)
 	v.AddConfigPath("./config")
 
 	v.AutomaticEnv()
