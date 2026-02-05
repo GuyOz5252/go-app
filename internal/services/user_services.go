@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/GuyOz5252/go-app/internal/core"
-	"github.com/GuyOz5252/go-app/pkg/password"
+	auth "github.com/GuyOz5252/go-app/pkg"
 )
 
 type UserService struct {
@@ -21,7 +21,7 @@ func (s *UserService) GetById(ctx context.Context, id int) (*core.User, error) {
 	return s.userRepository.GetById(ctx, id)
 }
 
-func (s *UserService) Create(ctx context.Context, username, email, rawPassword string) (int, error) {
+func (s *UserService) Register(ctx context.Context, username, email, rawPassword string) (int, error) {
 	usernameExists, err := s.userRepository.ExistsByUsername(ctx, username)
 	if err != nil {
 		return -1, err
@@ -38,7 +38,7 @@ func (s *UserService) Create(ctx context.Context, username, email, rawPassword s
 		return -1, core.ErrEmailConflict
 	}
 
-	hash, err := password.HashPassword(rawPassword)
+	hash, err := auth.HashPassword(rawPassword)
 	if err != nil {
 		return -1, err
 	}
@@ -61,7 +61,7 @@ func (s *UserService) Login(ctx context.Context, email, passwordStr string) (*co
 		return nil, err
 	}
 
-	if !password.CheckPassword(passwordStr, user.PasswordHash) {
+	if !auth.CheckPassword(passwordStr, user.PasswordHash) {
 		return nil, core.ErrInvalidCredentials
 	}
 

@@ -12,7 +12,7 @@ import (
 )
 
 type Config struct {
-	ConnectionString string `yaml:"connection-string"`
+	ConnectionString string `mapstructure:"connection-string"`
 }
 
 func main() {
@@ -21,12 +21,12 @@ func main() {
 	}
 	cmd := os.Args[1]
 
-	cfg, err := pkg.LoadConfig[Config]("../../config")
+	config, err := pkg.LoadConfig[Config]("../../config")
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	m, err := migrate.New("file://migrations", cfg.ConnectionString)
+	m, err := migrate.New("file://migrations", config.ConnectionString)
 	if err != nil {
 		log.Fatalf("Failed to create migration instance: %v", err)
 	}
