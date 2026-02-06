@@ -51,6 +51,7 @@ func newApplication() (*application, error) {
 	app := &application{
 		config:        config,
 		logger:        pkg.NewLogger(),
+		db:            db,
 		tokenAuth:     tokenAuth,
 		healthHandler: healthHandler,
 		userHandler:   userHandler,
@@ -64,6 +65,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize application: %s", err))
 	}
+	defer app.db.Close()
 
 	server := app.newHttpServer(app.mount())
 

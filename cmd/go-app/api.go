@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log/slog"
 	"net/http"
 
@@ -13,6 +14,7 @@ import (
 type application struct {
 	config        *Config
 	logger        *slog.Logger
+	db            *sql.DB
 	tokenAuth     *jwtauth.JWTAuth
 	healthHandler *handlers.HealthHandler
 	userHandler   *handlers.UserHandler
@@ -29,8 +31,8 @@ func (app *application) mount() http.Handler {
 	mux.Route("/api", func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
-				r.Use(jwtauth.Authenticator(app.tokenAuth))
 				r.Use(jwtauth.Verifier(app.tokenAuth))
+				r.Use(jwtauth.Authenticator(app.tokenAuth))
 
 				r.Get("/{id}", app.userHandler.GetById)
 			})
