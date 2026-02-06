@@ -1,4 +1,4 @@
-package pkg
+package results
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ func ApiError(w http.ResponseWriter, r *http.Request, status int, title string, 
 	})
 }
 
-func ApiResponse(w http.ResponseWriter, r *http.Request, status int, payload interface{}) {
+func ApiResponse(w http.ResponseWriter, r *http.Request, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(payload); err != nil {

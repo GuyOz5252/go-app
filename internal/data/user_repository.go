@@ -26,7 +26,7 @@ func (r *SqlUserRepository) GetById(ctx context.Context, id int) (*core.User, er
 	if !ok {
 		return nil, core.ErrQueryNotConfigured
 	}
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&user.Id, &user.Username, &user.Email)
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&user.Id, &user.Username, &user.Email, &user.PasswordHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, core.ErrNotFound
@@ -42,7 +42,7 @@ func (r *SqlUserRepository) Create(ctx context.Context, user *core.User) (int, e
 	if !ok {
 		return -1, core.ErrQueryNotConfigured
 	}
-	if err := r.db.QueryRowContext(ctx, query, user.Username, user.Email).Scan(&userId); err != nil {
+	if err := r.db.QueryRowContext(ctx, query, user.Username, user.Email, user.PasswordHash).Scan(&userId); err != nil {
 		return -1, err
 	}
 	user.Id = userId
@@ -107,4 +107,20 @@ func (r *SqlUserRepository) ExistsByEmail(ctx context.Context, email string) (bo
 	}
 
 	return exists, nil
+}
+
+func (r *SqlUserRepository) GetByEmail(ctx context.Context, email string) (*core.User, error) {
+	user := &core.User{}
+	query, ok := (*r.queries)["get_by_email"]
+	if !ok {
+		return nil, core.ErrQueryNotConfigured
+	}
+	err := r.db.QueryRowContext(ctx, query, email).Scan(&user.Id, &user.Username, &user.Email, &user.PasswordHash)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, core.ErrNotFound
+		}
+		return nil, err
+	}
+	return user, nil
 }
