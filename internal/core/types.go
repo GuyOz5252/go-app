@@ -20,3 +20,11 @@ type UserRepository interface {
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 }
+
+type ChatRepository interface {
+	GetById(ctx context.Context, id string) (*Chat, error)
+	ListByUserId(ctx context.Context, userId string) ([]*Chat, error)
+	Create(ctx context.Context, chat *Chat) (string, error)
+	AddMember(ctx context.Context, chatId, userId string) error
+	RemoveMember(ctx context.Context, chatId, userId string) error
+}
