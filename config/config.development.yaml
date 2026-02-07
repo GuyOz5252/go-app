@@ -1,0 +1,4 @@
+connection-string: 'postgres://go-app-server:Password1@localhost:5432/go-app-db?sslmode=disable'
+auth:
+  jwt-secret: 'super-secret-key-change-me'
+  token-expiration: '72h'

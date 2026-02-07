@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -20,6 +21,15 @@ func LoadConfig[T any](path string) (*T, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	if err := v.ReadInConfig(); err != nil {
+		return nil, err
+	}
+
+	env, ok := os.LookupEnv("ENVIRONMENT")
+	if !ok {
+		env = "development"
+	}
+	v.SetConfigName(fmt.Sprintf("config.%s", env))
+	if err := v.MergeInConfig(); err != nil {
 		return nil, err
 	}
 

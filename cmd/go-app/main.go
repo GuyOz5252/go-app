@@ -17,8 +17,8 @@ type Config struct {
 	Address          string `mapstructure:"address"`
 	ConnectionString string `mapstructure:"connection-string"`
 	Auth             struct {
-		JWTSecret       string `mapstructure:"jwt-secret"`
-		TokenExpiration string `mapstructure:"token-expiration"`
+		JWTSecret       string        `mapstructure:"jwt-secret"`
+		TokenExpiration time.Duration `mapstructure:"token-expiration"`
 	} `mapstructure:"auth"`
 	Queries struct {
 		User map[string]string `mapstructure:"user"`
@@ -38,16 +38,12 @@ func newApplication() (*application, error) {
 	}
 
 	tokenAuth := jwtauth.New("HS256", []byte(config.Auth.JWTSecret), nil)
-	tokenExpiration, err := time.ParseDuration(config.Auth.TokenExpiration)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token expiration: %w", err)
-	}
 
 	healthHandler := handlers.NewHealthHandler()
 
 	userRepository := data.NewSqlUserRepository(db, &config.Queries.User)
 	userService := services.NewUserService(userRepository)
-	userHandler := handlers.NewUserHandler(userService, tokenAuth, tokenExpiration)
+	userHandler := handlers.NewUserHandler(userService, tokenAuth, config.Auth.TokenExpiration)
 
 	app := &application{
 		config:        config,
