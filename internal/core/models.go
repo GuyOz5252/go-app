@@ -10,11 +10,12 @@ type User struct {
 }
 
 type Chat struct {
-	Id            string    `json:"id"`
-	Name          string    `json:"name"`
-	ChatMemberIds []string  `json:"chat_member_ids"`
-	ImageUrl      string    `json:"image_url,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
+	Id            string        `json:"id"`
+	Name          string        `json:"name"`
+	ChatMemberIds []string      `json:"chat_member_ids"`
+	ChatMessages  []ChatMessage `json:"chat_messages"`
+	ImageUrl      string        `json:"image_url,omitempty"`
+	CreatedAt     time.Time     `json:"created_at"`
 }
 
 type ChatDto struct {
@@ -29,7 +30,7 @@ type ChatMember struct {
 	Role   string `json:"role"`
 }
 
-type Message struct {
+type ChatMessage struct {
 	Id        string    `json:"id"`
 	UserId    string    `json:"user_id"`
 	ChatId    string    `json:"chat_id"`

@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"net/http"
+
+	results "github.com/GuyOz5252/go-app/pkg/api"
 )
 
 type HealthHandler struct{}
@@ -11,6 +13,5 @@ func NewHealthHandler() *HealthHandler {
 }
 
 func (h *HealthHandler) Check(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("healthy"))
+	results.ApiResponse(w, r, http.StatusOK, "healthy")
 }

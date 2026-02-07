@@ -23,7 +23,7 @@ type UserRepository interface {
 
 type ChatRepository interface {
 	GetById(ctx context.Context, id string) (*Chat, error)
-	ListByUserId(ctx context.Context, userId string) ([]*Chat, error)
+	ListByUserId(ctx context.Context, userId string) ([]*ChatDto, error)
 	Create(ctx context.Context, chat *Chat) (string, error)
 	AddMember(ctx context.Context, chatId, userId string) error
 	RemoveMember(ctx context.Context, chatId, userId string) error

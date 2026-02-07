@@ -20,6 +20,6 @@ func (s *ChatService) GetById(ctx context.Context, id string) (*core.Chat, error
 	return s.chatRepository.GetById(ctx, id)
 }
 
-func (s *ChatService) ListByUserId(ctx context.Context, userId string) ([]*core.Chat, error) {
+func (s *ChatService) ListByUserId(ctx context.Context, userId string) ([]*core.ChatDto, error) {
 	return s.chatRepository.ListByUserId(ctx, userId)
 }
