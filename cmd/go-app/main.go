@@ -22,6 +22,7 @@ type Config struct {
 	} `mapstructure:"auth"`
 	Queries struct {
 		User map[string]string `mapstructure:"user"`
+		Chat map[string]string `mapstructure:"chat"`
 	} `mapstructure:"queries"`
 }
 
