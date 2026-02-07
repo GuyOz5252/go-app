@@ -12,10 +12,10 @@ var ErrEmailConflict = errors.New("email already exists")
 var ErrInvalidCredentials = errors.New("invalid credentials")
 
 type UserRepository interface {
-	GetById(ctx context.Context, id int) (*User, error)
-	Create(ctx context.Context, user *User) (int, error)
+	GetById(ctx context.Context, id string) (*User, error)
+	Create(ctx context.Context, user *User) (string, error)
 	Update(ctx context.Context, user *User) error
-	Delete(ctx context.Context, id int) error
+	Delete(ctx context.Context, id string) error
 	ExistsByUsername(ctx context.Context, username string) (bool, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)

@@ -17,30 +17,30 @@ func NewUserService(userRepository core.UserRepository) *UserService {
 	}
 }
 
-func (s *UserService) GetById(ctx context.Context, id int) (*core.User, error) {
+func (s *UserService) GetById(ctx context.Context, id string) (*core.User, error) {
 	return s.userRepository.GetById(ctx, id)
 }
 
-func (s *UserService) Register(ctx context.Context, username, email, rawPassword string) (int, error) {
+func (s *UserService) Register(ctx context.Context, username, email, rawPassword string) (string, error) {
 	usernameExists, err := s.userRepository.ExistsByUsername(ctx, username)
 	if err != nil {
-		return -1, err
+		return "", err
 	}
 	if usernameExists {
-		return -1, core.ErrUsernameConflict
+		return "", core.ErrUsernameConflict
 	}
 
 	emailExists, err := s.userRepository.ExistsByEmail(ctx, email)
 	if err != nil {
-		return -1, err
+		return "", err
 	}
 	if emailExists {
-		return -1, core.ErrEmailConflict
+		return "", core.ErrEmailConflict
 	}
 
 	hash, err := auth.HashPassword(rawPassword)
 	if err != nil {
-		return -1, err
+		return "", err
 	}
 
 	user := &core.User{

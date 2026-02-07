@@ -20,7 +20,7 @@ func NewSqlUserRepository(db *sql.DB, queries *map[string]string) core.UserRepos
 	}
 }
 
-func (r *SqlUserRepository) GetById(ctx context.Context, id int) (*core.User, error) {
+func (r *SqlUserRepository) GetById(ctx context.Context, id string) (*core.User, error) {
 	user := &core.User{}
 	query, ok := (*r.queries)["get_by_id"]
 	if !ok {
@@ -36,14 +36,14 @@ func (r *SqlUserRepository) GetById(ctx context.Context, id int) (*core.User, er
 	return user, nil
 }
 
-func (r *SqlUserRepository) Create(ctx context.Context, user *core.User) (int, error) {
-	var userId int
+func (r *SqlUserRepository) Create(ctx context.Context, user *core.User) (string, error) {
+	var userId string
 	query, ok := (*r.queries)["create"]
 	if !ok {
-		return -1, core.ErrQueryNotConfigured
+		return "", core.ErrQueryNotConfigured
 	}
 	if err := r.db.QueryRowContext(ctx, query, user.Username, user.Email, user.PasswordHash).Scan(&userId); err != nil {
-		return -1, err
+		return "", err
 	}
 	user.Id = userId
 	return userId, nil
@@ -67,8 +67,8 @@ func (r *SqlUserRepository) Update(ctx context.Context, user *core.User) error {
 	return err
 }
 
-func (r *SqlUserRepository) Delete(ctx context.Context, id int) error {
-	var userId int
+func (r *SqlUserRepository) Delete(ctx context.Context, id string) error {
+	var userId string
 	query, ok := (*r.queries)["delete"]
 	if !ok {
 		return core.ErrQueryNotConfigured

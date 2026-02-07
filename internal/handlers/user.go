@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"time"
 
@@ -29,7 +28,7 @@ func NewUserHandler(userService *services.UserService, tokenAuth *jwtauth.JWTAut
 }
 
 type RegisterResponse struct {
-	UserId int `json:"userId"`
+	UserId string `json:"user_id"`
 }
 
 type RegisterRequest struct {
@@ -48,13 +47,7 @@ type LoginResponse struct {
 }
 
 func (h *UserHandler) GetById(w http.ResponseWriter, r *http.Request) {
-	userIdString := chi.URLParam(r, "id")
-	userId, err := strconv.Atoi(userIdString)
-	if err != nil {
-		results.ApiError(w, r, http.StatusBadRequest, "invalid user id", err.Error())
-		return
-	}
-
+	userId := chi.URLParam(r, "id")
 	user, err := h.userService.GetById(r.Context(), userId)
 	if err != nil {
 		if err == core.ErrNotFound {
