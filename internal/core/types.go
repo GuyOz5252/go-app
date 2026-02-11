@@ -10,6 +10,8 @@ var ErrQueryNotConfigured = errors.New("query not configured")
 var ErrUsernameConflict = errors.New("username already exists")
 var ErrEmailConflict = errors.New("email already exists")
 var ErrInvalidCredentials = errors.New("invalid credentials")
+var ErrMustHaveMoreThanOneMember = errors.New("chat must have more than one member")
+var ErrUserIsAlreadyInChat = errors.New("user is already in chat")
 
 type UserRepository interface {
 	GetById(ctx context.Context, id string) (*User, error)
@@ -27,4 +29,5 @@ type ChatRepository interface {
 	Create(ctx context.Context, chat *Chat) (string, error)
 	AddMember(ctx context.Context, chatId, userId string) error
 	RemoveMember(ctx context.Context, chatId, userId string) error
+	IsMemberInChat(ctx context.Context, chatId, userId string) (bool, error)
 }
