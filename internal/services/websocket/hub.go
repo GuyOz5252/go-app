@@ -34,6 +34,7 @@ func (h *Hub) Run() {
 			if userClients, ok := h.clients[client.userId]; ok {
 				if _, ok := userClients[client]; ok {
 					delete(userClients, client)
+					close(client.send)
 					client.connection.Close()
 					if len(userClients) == 0 {
 						delete(h.clients, client.userId)
@@ -61,8 +62,7 @@ func (h *Hub) PublishMessage(userId string, message []byte) {
 			select {
 			case client.send <- message:
 			default:
-				close(client.send)
-				delete(clients, client)
+				go h.Unregister(client)
 			}
 		}
 	}
