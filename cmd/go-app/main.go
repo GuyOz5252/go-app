@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -25,6 +26,17 @@ type Config struct {
 		User map[string]string `mapstructure:"user"`
 		Chat map[string]string `mapstructure:"chat"`
 	} `mapstructure:"queries"`
+}
+
+type application struct {
+	config           *Config
+	logger           *slog.Logger
+	db               *sql.DB
+	tokenAuth        *jwtauth.JWTAuth
+	healthHandler    *handlers.HealthHandler
+	userHandler      *handlers.UserHandler
+	chatHandler      *handlers.ChatHandler
+	websocketHandler *handlers.WebSocketHandler
 }
 
 func newApplication() (*application, error) {

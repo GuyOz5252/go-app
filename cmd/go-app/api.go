@@ -1,26 +1,12 @@
 package main
 
 import (
-	"database/sql"
-	"log/slog"
 	"net/http"
 
-	"github.com/GuyOz5252/go-app/internal/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth/v5"
 )
-
-type application struct {
-	config           *Config
-	logger           *slog.Logger
-	db               *sql.DB
-	tokenAuth        *jwtauth.JWTAuth
-	healthHandler    *handlers.HealthHandler
-	userHandler      *handlers.UserHandler
-	chatHandler      *handlers.ChatHandler
-	websocketHandler *handlers.WebSocketHandler
-}
 
 func (app *application) mount() http.Handler {
 	mux := chi.NewRouter()
