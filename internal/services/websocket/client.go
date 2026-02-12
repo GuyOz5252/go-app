@@ -20,15 +20,13 @@ func NewClient(hub *Hub, conn *websocket.Conn, userId string) *Client {
 
 func (c *Client) ReadMessages() {
 	defer func() {
-		c.hub.unregister <- c
+		c.hub.Unregister <- c
 		c.connection.Close()
 	}()
 	for {
 		_, _, err := c.connection.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				// TODO: Log
-			}
+			// TODO: Log
 			break
 		}
 
@@ -37,9 +35,8 @@ func (c *Client) ReadMessages() {
 }
 
 func (c *Client) WriteMessages() {
-	defer func() {
-		c.connection.Close()
-	}()
+	defer c.connection.Close()
+
 	for message := range c.send {
 		if err := c.connection.WriteMessage(websocket.TextMessage, message); err != nil {
 			return
