@@ -48,6 +48,6 @@ func (h *WebSocketHandler) ServeWebSocket(w http.ResponseWriter, r *http.Request
 	client := ws.NewClient(h.hub, conn, userId)
 	h.hub.Register(client)
 
-	go client.WritePump()
-	go client.ReadPump()
+	go client.WriteMessages()
+	go client.ReadMessages()
 }

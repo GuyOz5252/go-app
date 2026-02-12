@@ -18,7 +18,7 @@ func NewClient(hub *Hub, conn *websocket.Conn, userId string) *Client {
 	}
 }
 
-func (c *Client) ReadPump() {
+func (c *Client) ReadMessages() {
 	defer func() {
 		c.hub.unregister <- c
 		c.connection.Close()
@@ -31,39 +31,20 @@ func (c *Client) ReadPump() {
 			}
 			break
 		}
-		
+
 		// TODO: Handle messages
 	}
 }
 
-func (c *Client) WritePump() {
+func (c *Client) WriteMessages() {
 	defer func() {
 		c.connection.Close()
 	}()
-	for {
-		select {
-		case message, ok := <-c.send:
-			if !ok {
-				// The hub closed the channel.
-				c.connection.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-
-			w, err := c.connection.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			w.Write(message)
-
-			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write(<-c.send)
-			}
-
-			if err := w.Close(); err != nil {
-				return
-			}
+	for message := range c.send {
+		if err := c.connection.WriteMessage(websocket.TextMessage, message); err != nil {
+			return
 		}
 	}
+
+	c.connection.WriteMessage(websocket.CloseMessage, []byte{})
 }
