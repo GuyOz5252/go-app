@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/GuyOz5252/go-app/internal/core"
@@ -75,11 +74,16 @@ func (s *ChatService) SendMessage(ctx context.Context, userId, chatId, content s
 	}
 
 	chat, err := s.chatRepository.GetById(ctx, chatId)
-	if err == nil {
-		msgBytes, _ := json.Marshal(msg)
-		for _, userId := range chat.ChatMemberIds {
-			s.hub.PublishMessage(userId, msgBytes)
-		}
+	if err != nil {
+		return nil, err
+	}
+
+	wsMessage := core.WSMessage{
+		Type:    "message",
+		Payload: msg,
+	}
+	for _, userId := range chat.ChatMemberIds {
+		s.hub.PublishMessage(userId, &wsMessage)
 	}
 
 	return msg, nil

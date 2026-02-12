@@ -1,20 +1,27 @@
 package websocket
 
-import "github.com/gorilla/websocket"
+import (
+	"encoding/json"
+
+	"github.com/GuyOz5252/go-app/internal/core"
+	"github.com/gorilla/websocket"
+)
 
 type Client struct {
-	hub        *Hub
-	connection *websocket.Conn
-	send       chan []byte
-	userId     string
+	userId          string
+	hub             *Hub
+	connection      *websocket.Conn
+	send            chan *core.WSMessage
+	handlerResolver map[string]func(m *core.WSMessage)
 }
 
-func NewClient(hub *Hub, conn *websocket.Conn, userId string) *Client {
+func NewClient(userId string, hub *Hub, conn *websocket.Conn, hr map[string]func(m *core.WSMessage)) *Client {
 	return &Client{
-		hub:        hub,
-		connection: conn,
-		send:       make(chan []byte, 256),
-		userId:     userId,
+		userId:          userId,
+		hub:             hub,
+		connection:      conn,
+		send:            make(chan *core.WSMessage, 10),
+		handlerResolver: hr,
 	}
 }
 
@@ -24,21 +31,25 @@ func (c *Client) ReadMessages() {
 		c.connection.Close()
 	}()
 	for {
-		_, _, err := c.connection.ReadMessage()
+		_, messageBytes, err := c.connection.ReadMessage()
 		if err != nil {
 			// TODO: Log
 			break
 		}
-
-		// TODO: Handle messages
+		var wsMessage core.WSMessage
+		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
+			// TODO: Log
+		} else {
+			c.handlerResolver[wsMessage.Type](&wsMessage)
+		}
 	}
 }
 
 func (c *Client) WriteMessages() {
 	defer c.connection.Close()
 
-	for message := range c.send {
-		if err := c.connection.WriteMessage(websocket.TextMessage, message); err != nil {
+	for webSocketMessage := range c.send {
+		if err := c.connection.WriteJSON(webSocketMessage); err != nil {
 			return
 		}
 	}

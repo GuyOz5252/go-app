@@ -2,6 +2,8 @@ package websocket
 
 import (
 	"sync"
+
+	"github.com/GuyOz5252/go-app/internal/core"
 )
 
 type Hub struct {
@@ -56,7 +58,7 @@ func (h *Hub) handleUnregister(client *Client) {
 	}
 }
 
-func (h *Hub) PublishMessage(userId string, message []byte) {
+func (h *Hub) PublishMessage(userId string, message *core.WSMessage) {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
 

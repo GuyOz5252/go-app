@@ -14,6 +14,11 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrMustHaveMoreThanOneMember = errors.New("chat must have more than one member")
 var ErrUserIsAlreadyInChat = errors.New("user is already in chat")
 
+type WSMessage struct {
+	Type    string `json:"type"`
+	Payload any    `json:"payload"`
+}
+
 type UserRepository interface {
 	GetById(ctx context.Context, id string) (*User, error)
 	Create(ctx context.Context, user *User) (string, error)

@@ -63,7 +63,7 @@ func newApplication() (*application, error) {
 
 	chatService := services.NewChatService(nil, hub)
 	chatHandler := handlers.NewChatHandler(chatService)
-	websocketHandler := handlers.NewWebSocketHandler(hub)
+	websocketHandler := handlers.NewWebSocketHandler(hub, nil)
 
 	app := &application{
 		config:           config,
