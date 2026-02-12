@@ -9,6 +9,7 @@ import (
 	"github.com/GuyOz5252/go-app/internal/data"
 	"github.com/GuyOz5252/go-app/internal/handlers"
 	"github.com/GuyOz5252/go-app/internal/services"
+	"github.com/GuyOz5252/go-app/internal/services/websocket"
 	"github.com/GuyOz5252/go-app/pkg"
 	"github.com/go-chi/jwtauth/v5"
 )
@@ -45,13 +46,22 @@ func newApplication() (*application, error) {
 	userService := services.NewUserService(userRepository)
 	userHandler := handlers.NewUserHandler(userService, tokenAuth, config.Auth.TokenExpiration)
 
+	hub := websocket.NewHub()
+	go hub.Run()
+
+	chatService := services.NewChatService(nil, hub)
+	chatHandler := handlers.NewChatHandler(chatService)
+	websocketHandler := handlers.NewWebSocketHandler(hub)
+
 	app := &application{
-		config:        config,
-		logger:        pkg.NewLogger(),
-		db:            db,
-		tokenAuth:     tokenAuth,
-		healthHandler: healthHandler,
-		userHandler:   userHandler,
+		config:           config,
+		logger:           pkg.NewLogger(),
+		db:               db,
+		tokenAuth:        tokenAuth,
+		healthHandler:    healthHandler,
+		userHandler:      userHandler,
+		chatHandler:      chatHandler,
+		websocketHandler: websocketHandler,
 	}
 
 	return app, nil

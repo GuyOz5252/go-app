@@ -6,6 +6,7 @@ import (
 )
 
 var ErrNotFound = errors.New("not found")
+var ErrUnautherized = errors.New("unautherized")
 var ErrQueryNotConfigured = errors.New("query not configured")
 var ErrUsernameConflict = errors.New("username already exists")
 var ErrEmailConflict = errors.New("email already exists")
@@ -30,4 +31,6 @@ type ChatRepository interface {
 	AddMember(ctx context.Context, chatId, userId string) error
 	RemoveMember(ctx context.Context, chatId, userId string) error
 	IsMemberInChat(ctx context.Context, chatId, userId string) (bool, error)
+	CreateMessage(ctx context.Context, message *ChatMessage) error
+	GetMessages(ctx context.Context, chatId string, limit, offset int) ([]*ChatMessage, error)
 }

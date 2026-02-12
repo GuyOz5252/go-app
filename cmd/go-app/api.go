@@ -12,12 +12,14 @@ import (
 )
 
 type application struct {
-	config        *Config
-	logger        *slog.Logger
-	db            *sql.DB
-	tokenAuth     *jwtauth.JWTAuth
-	healthHandler *handlers.HealthHandler
-	userHandler   *handlers.UserHandler
+	config           *Config
+	logger           *slog.Logger
+	db               *sql.DB
+	tokenAuth        *jwtauth.JWTAuth
+	healthHandler    *handlers.HealthHandler
+	userHandler      *handlers.UserHandler
+	chatHandler      *handlers.ChatHandler
+	websocketHandler *handlers.WebSocketHandler
 }
 
 func (app *application) mount() http.Handler {
@@ -27,6 +29,7 @@ func (app *application) mount() http.Handler {
 	mux.Use(middleware.Recoverer)
 
 	mux.Get("/", app.healthHandler.Check)
+	mux.Get("/ws", app.websocketHandler.ServeWebSocket)
 
 	mux.Route("/api", func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
@@ -39,6 +42,15 @@ func (app *application) mount() http.Handler {
 
 			r.Post("/", app.userHandler.Register)
 			r.Post("/login", app.userHandler.Login)
+		})
+
+		r.Route("/chats", func(r chi.Router) {
+			r.Use(jwtauth.Verifier(app.tokenAuth))
+			r.Use(jwtauth.Authenticator(app.tokenAuth))
+
+			r.Post("/", app.chatHandler.Create)
+			r.Get("/", app.chatHandler.List)
+			r.Post("/{chatId}/messages", app.chatHandler.SendMessage)
 		})
 	})
 
