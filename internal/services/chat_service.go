@@ -61,17 +61,23 @@ func (s *ChatService) SendMessage(ctx context.Context, userId, chatId, content s
 		return nil, core.ErrUnautherized
 	}
 
-	msg := &core.ChatMessage{
+	chatMessage := &core.ChatMessage{
 		UserId:    userId,
 		ChatId:    chatId,
 		Content:   content,
 		CreatedAt: time.Now().UTC(),
 	}
 
-	err = s.chatRepository.CreateMessage(ctx, msg)
+	err = s.chatRepository.CreateMessage(ctx, chatMessage)
 	if err != nil {
 		return nil, err
 	}
+
+	wsAckMessage := core.WSMessage{
+		Type:    "message:ack",
+		Payload: chatMessage.Id,
+	}
+	s.hub.PublishMessage(chatMessage.UserId, &wsAckMessage)
 
 	chat, err := s.chatRepository.GetById(ctx, chatId)
 	if err != nil {
@@ -79,12 +85,35 @@ func (s *ChatService) SendMessage(ctx context.Context, userId, chatId, content s
 	}
 
 	wsMessage := core.WSMessage{
-		Type:    "message",
-		Payload: msg,
+		Type:    "message:new",
+		Payload: chatMessage,
 	}
 	for _, userId := range chat.ChatMemberIds {
-		s.hub.PublishMessage(userId, &wsMessage)
+		if userId != chatMessage.UserId {
+			s.hub.PublishMessage(userId, &wsMessage)
+		}
 	}
 
-	return msg, nil
+	return chatMessage, nil
+}
+
+func (s *ChatService) NotifyUserTyping(m *core.WSMessage) {
+	typingMessage, ok := m.Payload.(struct {
+		UserId string `json:"user_id"`
+		ChatId string `json:"chat_id"`
+	})
+	if !ok {
+		return
+	}
+
+	chat, err := s.chatRepository.GetById(nil, typingMessage.ChatId)
+	if err != nil {
+		return
+	}
+
+	for _, userId := range chat.ChatMemberIds {
+		if userId != typingMessage.UserId {
+			s.hub.PublishMessage(userId, m)
+		}
+	}
 }
