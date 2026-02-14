@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -31,6 +32,12 @@ const (
 	UserTypingStart
 	UserTypingEnd
 )
+
+type Cache interface {
+	SetKey(ctx context.Context, key string, ttl time.Duration) error
+	DeleteKey(ctx context.Context, key string) error
+	KeyExists(ctx context.Context, key string) (bool, error)
+}
 
 type UserRepository interface {
 	GetById(ctx context.Context, id string) (*User, error)
