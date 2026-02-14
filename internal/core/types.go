@@ -15,9 +15,22 @@ var ErrMustHaveMoreThanOneMember = errors.New("chat must have more than one memb
 var ErrUserIsAlreadyInChat = errors.New("user is already in chat")
 
 type WSMessage struct {
-	Type    string `json:"type"`
-	Payload any    `json:"payload"`
+	Type    WSMessageType `json:"message_type"`
+	ChatId  string        `json:"chat_id"`
+	UserId  string        `json:"user_id"`
+	Payload any           `json:"payload,omitempty"`
 }
+
+type WSMessageType int
+
+const (
+	NewMessage WSMessageType = iota
+	MessageServerAck
+	MessageUserAck
+	MessageUserReadAck
+	UserTypingStart
+	UserTypingEnd
+)
 
 type UserRepository interface {
 	GetById(ctx context.Context, id string) (*User, error)

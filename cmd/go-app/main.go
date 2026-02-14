@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GuyOz5252/go-app/internal/core"
 	"github.com/GuyOz5252/go-app/internal/data"
 	"github.com/GuyOz5252/go-app/internal/handlers"
 	"github.com/GuyOz5252/go-app/internal/services"
@@ -54,7 +55,7 @@ func newApplication() (*application, error) {
 
 	healthHandler := handlers.NewHealthHandler()
 
-	userRepository := data.NewSqlUserRepository(db, &config.Queries.User)
+	userRepository := data.NewSqlUserRepository(db, config.Queries.User)
 	userService := services.NewUserService(userRepository)
 	userHandler := handlers.NewUserHandler(userService, tokenAuth, config.Auth.TokenExpiration)
 
@@ -63,7 +64,14 @@ func newApplication() (*application, error) {
 
 	chatService := services.NewChatService(nil, hub)
 	chatHandler := handlers.NewChatHandler(chatService)
-	websocketHandler := handlers.NewWebSocketHandler(hub, nil)
+	websocketHandler := handlers.NewWebSocketHandler(hub, map[core.WSMessageType]func(m *core.WSMessage){
+		core.NewMessage:         chatService.SendMessageWsHandler,
+		core.MessageServerAck:   chatService.PublishWSMessageToChat,
+		core.MessageUserAck:     chatService.PublishWSMessageToChat,
+		core.MessageUserReadAck: chatService.PublishWSMessageToChat,
+		core.UserTypingStart:    chatService.PublishWSMessageToChat,
+		core.UserTypingEnd:      chatService.PublishWSMessageToChat,
+	})
 
 	app := &application{
 		config:           config,

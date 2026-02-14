@@ -25,14 +25,14 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.Register:
-			h.handleRegister(client)
+			h.registerClient(client)
 		case client := <-h.Unregister:
-			h.handleUnregister(client)
+			h.unregisterClient(client)
 		}
 	}
 }
 
-func (h *Hub) handleRegister(client *Client) {
+func (h *Hub) registerClient(client *Client) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
@@ -42,7 +42,7 @@ func (h *Hub) handleRegister(client *Client) {
 	h.clients[client.userId][client] = true
 }
 
-func (h *Hub) handleUnregister(client *Client) {
+func (h *Hub) unregisterClient(client *Client) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 

@@ -12,10 +12,10 @@ type Client struct {
 	hub             *Hub
 	connection      *websocket.Conn
 	send            chan *core.WSMessage
-	handlerResolver map[string]func(m *core.WSMessage)
+	handlerResolver map[core.WSMessageType]func(m *core.WSMessage)
 }
 
-func NewClient(userId string, hub *Hub, conn *websocket.Conn, hr map[string]func(m *core.WSMessage)) *Client {
+func NewClient(userId string, hub *Hub, conn *websocket.Conn, hr map[core.WSMessageType]func(m *core.WSMessage)) *Client {
 	return &Client{
 		userId:          userId,
 		hub:             hub,
@@ -40,7 +40,10 @@ func (c *Client) ReadMessages() {
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
 			// TODO: Log
 		} else {
-			c.handlerResolver[wsMessage.Type](&wsMessage)
+			handlerFunc, ok := c.handlerResolver[wsMessage.Type]
+			if (ok) {
+				handlerFunc(&wsMessage)
+			}
 		}
 	}
 }
@@ -48,8 +51,8 @@ func (c *Client) ReadMessages() {
 func (c *Client) WriteMessages() {
 	defer c.connection.Close()
 
-	for webSocketMessage := range c.send {
-		if err := c.connection.WriteJSON(webSocketMessage); err != nil {
+	for wsMessage := range c.send {
+		if err := c.connection.WriteJSON(wsMessage); err != nil {
 			return
 		}
 	}

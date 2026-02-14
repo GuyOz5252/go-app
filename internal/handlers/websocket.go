@@ -12,10 +12,10 @@ import (
 
 type WebSocketHandler struct {
 	hub *ws.Hub
-	handlerResolver map[string]func(m *core.WSMessage)
+	handlerResolver map[core.WSMessageType]func(m *core.WSMessage)
 }
 
-func NewWebSocketHandler(hub *ws.Hub, hr map[string]func(m *core.WSMessage)) *WebSocketHandler {
+func NewWebSocketHandler(hub *ws.Hub, hr map[core.WSMessageType]func(m *core.WSMessage)) *WebSocketHandler {
 	return &WebSocketHandler{
 		hub: hub,
 		handlerResolver: hr,
