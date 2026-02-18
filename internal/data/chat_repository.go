@@ -67,3 +67,7 @@ func (r *SqlChatRepository) CreateMessage(ctx context.Context, message *core.Cha
 func (r *SqlChatRepository) GetMessages(ctx context.Context, chatId string, limit, offset int) ([]*core.ChatMessage, error) {
 	panic("not implemented")
 }
+
+func (r *SqlChatRepository) GetMembers(ctx context.Context, chatId string) ([]string, error) {
+	panic("unimplemented")
+}

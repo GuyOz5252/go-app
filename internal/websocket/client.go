@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/GuyOz5252/go-app/internal/core"
@@ -8,20 +9,18 @@ import (
 )
 
 type Client struct {
-	userId          string
-	hub             *Hub
-	connection      *websocket.Conn
-	send            chan *core.WSMessage
-	handlerResolver map[core.WSMessageType]func(m *core.WSMessage)
+	userId     string
+	hub        *Hub
+	connection *websocket.Conn
+	send       chan *core.WSMessage
 }
 
-func NewClient(userId string, hub *Hub, conn *websocket.Conn, hr map[core.WSMessageType]func(m *core.WSMessage)) *Client {
+func NewClient(userId string, hub *Hub, conn *websocket.Conn) *Client {
 	return &Client{
-		userId:          userId,
-		hub:             hub,
-		connection:      conn,
-		send:            make(chan *core.WSMessage, 10),
-		handlerResolver: hr,
+		userId:     userId,
+		hub:        hub,
+		connection: conn,
+		send:       make(chan *core.WSMessage, 10),
 	}
 }
 
@@ -33,16 +32,19 @@ func (c *Client) ReadMessages() {
 	for {
 		_, messageBytes, err := c.connection.ReadMessage()
 		if err != nil {
-			// TODO: Log
+			c.hub.sendWSError("", c.userId, err)
 			break
 		}
 		var wsMessage core.WSMessage
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
-			// TODO: Log
+			c.hub.sendWSError("", c.userId, err)
 		} else {
-			handlerFunc, ok := c.handlerResolver[wsMessage.Type]
-			if (ok) {
-				handlerFunc(&wsMessage)
+			ctx := context.Background()
+
+			switch wsMessage.Type {
+			case core.NewMessage:
+				c.hub.deliverMessage(ctx, wsMessage)
+			default:
 			}
 		}
 	}

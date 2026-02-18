@@ -26,6 +26,8 @@ type CreateChatRequest struct {
 
 type SendMessageRequest struct {
 	Content string `json:"content"`
+	MediaUrl string `json:"media_url,omitempty"`
+	ReplyToId string `json:"reply_to_id,omitempty"`
 }
 
 func (h *ChatHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +70,7 @@ func (h *ChatHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := h.chatService.SendMessage(r.Context(), userId, chatId, req.Content)
+	msg, err := h.chatService.SendMessage(r.Context(), userId, chatId, req.Content, req.MediaUrl, req.ReplyToId)
 	if err != nil {
 		results.ApiError(w, r, http.StatusInternalServerError, "failed to send message", err.Error())
 		return

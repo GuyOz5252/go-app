@@ -3,8 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/GuyOz5252/go-app/internal/core"
-	ws "github.com/GuyOz5252/go-app/internal/services/websocket"
+	ws "github.com/GuyOz5252/go-app/internal/websocket"
 	results "github.com/GuyOz5252/go-app/pkg/api"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/gorilla/websocket"
@@ -12,13 +11,11 @@ import (
 
 type WebSocketHandler struct {
 	hub *ws.Hub
-	handlerResolver map[core.WSMessageType]func(m *core.WSMessage)
 }
 
-func NewWebSocketHandler(hub *ws.Hub, hr map[core.WSMessageType]func(m *core.WSMessage)) *WebSocketHandler {
+func NewWebSocketHandler(hub *ws.Hub) *WebSocketHandler {
 	return &WebSocketHandler{
 		hub: hub,
-		handlerResolver: hr,
 	}
 }
 
@@ -49,7 +46,7 @@ func (h *WebSocketHandler) ServeWebSocket(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	client := ws.NewClient(userId, h.hub, conn, h.handlerResolver)
+	client := ws.NewClient(userId, h.hub, conn)
 	h.hub.Register <- client
 
 	go client.WriteMessages()

@@ -31,6 +31,7 @@ const (
 	MessageUserReadAck
 	UserTypingStart
 	UserTypingEnd
+	ServerError
 )
 
 type Cache interface {
@@ -58,4 +59,5 @@ type ChatRepository interface {
 	IsMemberInChat(ctx context.Context, chatId, userId string) (bool, error)
 	CreateMessage(ctx context.Context, message *ChatMessage) error
 	GetMessages(ctx context.Context, chatId string, limit, offset int) ([]*ChatMessage, error)
+	GetMembers(ctx context.Context, chatId string) ([]string, error)
 }

@@ -5,18 +5,15 @@ import (
 	"time"
 
 	"github.com/GuyOz5252/go-app/internal/core"
-	"github.com/GuyOz5252/go-app/internal/services/websocket"
 )
 
 type ChatService struct {
 	chatRepository core.ChatRepository
-	hub            *websocket.Hub
 }
 
-func NewChatService(chatRepository core.ChatRepository, hub *websocket.Hub) *ChatService {
+func NewChatService(chatRepository core.ChatRepository) *ChatService {
 	return &ChatService{
 		chatRepository: chatRepository,
-		hub:            hub,
 	}
 }
 
@@ -52,7 +49,7 @@ func (s *ChatService) AddMember(ctx context.Context, chatId, userId string) erro
 	return s.chatRepository.AddMember(ctx, chatId, userId)
 }
 
-func (s *ChatService) SendMessage(ctx context.Context, userId, chatId, content string) (*core.ChatMessage, error) {
+func (s *ChatService) SendMessage(ctx context.Context, userId, chatId, content string, mediaUrl string, replyToId string) (*core.ChatMessage, error) {
 	isMember, err := s.chatRepository.IsMemberInChat(ctx, chatId, userId)
 	if err != nil {
 		return nil, err
@@ -65,73 +62,19 @@ func (s *ChatService) SendMessage(ctx context.Context, userId, chatId, content s
 		UserId:    userId,
 		ChatId:    chatId,
 		Content:   content,
+		MediaUrl:  mediaUrl,
+		ReplyToId: replyToId,
 		CreatedAt: time.Now().UTC(),
 	}
 
-	s.sendMessage(chatId, userId, chatMessage)
+	err = s.chatRepository.CreateMessage(ctx, chatMessage)
+	if err != nil {
+		return nil, err
+	}
 
 	return chatMessage, nil
 }
 
-func (s *ChatService) SendMessageWsHandler(wsMessage *core.WSMessage) {
-	isMember, err := s.chatRepository.IsMemberInChat(context.Background(), wsMessage.ChatId, wsMessage.UserId)
-	if err != nil || !isMember {
-		return
-	}
-
-	wsMessagePayload := wsMessage.Payload.(struct {
-		Content   string `json:"content"`
-		MediaUrl  string `json:"media_url,omitempty"`
-		ReplyToId string `json:"reply_to_id"`
-	})
-
-	chatMessage := core.ChatMessage{
-		UserId:    wsMessage.UserId,
-		ChatId:    wsMessage.ChatId,
-		Content:   wsMessagePayload.Content,
-		MediaUrl:  wsMessagePayload.MediaUrl,
-		ReplyToId: wsMessagePayload.ReplyToId,
-		CreatedAt: time.Now().UTC(),
-	}
-
-	s.sendMessage(wsMessage.ChatId, wsMessage.UserId, &chatMessage)
-}
-
-func (s *ChatService) sendMessage(chatId string, userId string, chatMessage *core.ChatMessage) {
-	err := s.chatRepository.CreateMessage(context.Background(), chatMessage)
-	if err != nil {
-		return
-	}
-
-	s.hub.PublishMessage(userId, &core.WSMessage{
-		Type: core.MessageServerAck,
-		Payload: struct {
-			ChatId    string `json:"chat_id"`
-			MessageId string `json:"message_id"`
-		}{
-			ChatId:    chatId,
-			MessageId: chatMessage.Id,
-		},
-	})
-
-	newWsMessage := &core.WSMessage{
-		Type:    core.NewMessage,
-		ChatId:  chatId,
-		UserId:  userId,
-		Payload: chatMessage,
-	}
-	s.PublishWSMessageToChat(newWsMessage)
-}
-
-func (s *ChatService) PublishWSMessageToChat(wsMessage *core.WSMessage) {
-	chat, err := s.chatRepository.GetById(context.Background(), wsMessage.ChatId)
-	if err != nil {
-		return
-	}
-
-	for _, userId := range chat.ChatMemberIds {
-		if userId != wsMessage.UserId {
-			s.hub.PublishMessage(userId, wsMessage)
-		}
-	}
+func (s *ChatService) GetMembers(ctx context.Context, chatId string) ([]string, error) {
+	return s.chatRepository.GetMembers(ctx, chatId)
 }

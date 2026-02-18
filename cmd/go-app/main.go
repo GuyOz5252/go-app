@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GuyOz5252/go-app/internal/core"
 	"github.com/GuyOz5252/go-app/internal/data"
+	"github.com/GuyOz5252/go-app/internal/data/cache"
 	"github.com/GuyOz5252/go-app/internal/handlers"
 	"github.com/GuyOz5252/go-app/internal/services"
-	"github.com/GuyOz5252/go-app/internal/services/websocket"
+	"github.com/GuyOz5252/go-app/internal/websocket"
 	"github.com/GuyOz5252/go-app/pkg"
 	"github.com/go-chi/jwtauth/v5"
 )
@@ -59,19 +59,17 @@ func newApplication() (*application, error) {
 	userService := services.NewUserService(userRepository)
 	userHandler := handlers.NewUserHandler(userService, tokenAuth, config.Auth.TokenExpiration)
 
-	hub := websocket.NewHub()
-	go hub.Run()
+	cache := cache.NewRedisCache()
+	presenceService := services.NewPresenceService(cache)
 
-	chatService := services.NewChatService(nil, hub)
+	chatRepository := data.NewSqlChatRepository(db, config.Queries.Chat)
+	chatService := services.NewChatService(chatRepository)
 	chatHandler := handlers.NewChatHandler(chatService)
-	websocketHandler := handlers.NewWebSocketHandler(hub, map[core.WSMessageType]func(m *core.WSMessage){
-		core.NewMessage:         chatService.SendMessageWsHandler,
-		core.MessageServerAck:   chatService.PublishWSMessageToChat,
-		core.MessageUserAck:     chatService.PublishWSMessageToChat,
-		core.MessageUserReadAck: chatService.PublishWSMessageToChat,
-		core.UserTypingStart:    chatService.PublishWSMessageToChat,
-		core.UserTypingEnd:      chatService.PublishWSMessageToChat,
-	})
+
+	hub := websocket.NewHub(chatService, presenceService)
+	go hub.Run()
+	
+	websocketHandler := handlers.NewWebSocketHandler(hub)
 
 	app := &application{
 		config:           config,
