@@ -44,6 +44,14 @@ func (c *Client) ReadMessages() {
 			switch wsMessage.Type {
 			case core.NewMessage:
 				c.hub.deliverMessage(ctx, wsMessage)
+			case core.MessageUserAck:
+				c.hub.deliverUserAcks(ctx, wsMessage)
+			case core.MessageUserReadAck:
+				c.hub.deliverUserAcks(ctx, wsMessage)
+			case core.UserTypingStart:
+				c.hub.deliverTyping(ctx, wsMessage)
+			case core.UserTypingEnd:
+				c.hub.deliverTyping(ctx, wsMessage)
 			default:
 			}
 		}

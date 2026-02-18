@@ -141,3 +141,17 @@ func (h *Hub) deliverMessage(ctx context.Context, wsMessage core.WSMessage) {
 	}
 	h.broadcastWSMessage(chatMembers, wsOutgoingMessage)
 }
+
+func (h *Hub) deliverUserAcks(ctx context.Context, wsMessage core.WSMessage) {
+	h.sendWSMessage(wsMessage.UserId, &wsMessage)
+}
+
+func (h *Hub) deliverTyping(ctx context.Context, wsMessage core.WSMessage) {
+	chatMembers, err := h.chatService.GetMembers(ctx, wsMessage.ChatId)
+	if err != nil {
+		h.sendWSError(wsMessage.ChatId, wsMessage.UserId, err)
+		return
+	}
+
+	h.broadcastWSMessage(chatMembers, &wsMessage)
+}
