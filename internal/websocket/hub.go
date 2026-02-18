@@ -142,7 +142,7 @@ func (h *Hub) deliverMessage(ctx context.Context, wsMessage core.WSMessage) {
 	h.broadcastWSMessage(chatMembers, wsOutgoingMessage)
 }
 
-func (h *Hub) deliverUserAcks(ctx context.Context, wsMessage core.WSMessage) {
+func (h *Hub) deliverUserAcks(wsMessage core.WSMessage) {
 	h.sendWSMessage(wsMessage.UserId, &wsMessage)
 }
 

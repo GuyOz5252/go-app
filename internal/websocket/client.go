@@ -45,9 +45,9 @@ func (c *Client) ReadMessages() {
 			case core.NewMessage:
 				c.hub.deliverMessage(ctx, wsMessage)
 			case core.MessageUserAck:
-				c.hub.deliverUserAcks(ctx, wsMessage)
+				c.hub.deliverUserAcks(wsMessage)
 			case core.MessageUserReadAck:
-				c.hub.deliverUserAcks(ctx, wsMessage)
+				c.hub.deliverUserAcks(wsMessage)
 			case core.UserTypingStart:
 				c.hub.deliverTyping(ctx, wsMessage)
 			case core.UserTypingEnd:
