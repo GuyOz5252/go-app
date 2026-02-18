@@ -63,7 +63,7 @@ func (c *Client) WriteMessages() {
 
 	for wsMessage := range c.send {
 		if err := c.connection.WriteJSON(wsMessage); err != nil {
-			return
+			break
 		}
 	}
 
