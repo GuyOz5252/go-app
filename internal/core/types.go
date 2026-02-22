@@ -31,6 +31,9 @@ const (
 	MessageUserReadAck
 	UserTypingStart
 	UserTypingEnd
+	UserOnline
+	UserOffline
+	UserAway
 	ServerError
 )
 

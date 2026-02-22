@@ -42,16 +42,11 @@ func (h *Hub) registerClient(client *Client) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
-	isFirstConnection := len(h.clients[client.userId]) == 0
-
 	if _, ok := h.clients[client.userId]; !ok {
 		h.clients[client.userId] = make(map[*Client]bool)
-	}
-	h.clients[client.userId][client] = true
-
-	if isFirstConnection {
 		go h.presenceService.SetOnline(context.Background(), client.userId)
 	}
+	h.clients[client.userId][client] = true
 }
 
 func (h *Hub) unregisterClient(client *Client) {
