@@ -41,6 +41,9 @@ type Cache interface {
 	SetKey(ctx context.Context, key string, ttl time.Duration) error
 	DeleteKey(ctx context.Context, key string) error
 	KeyExists(ctx context.Context, key string) (bool, error)
+	AddToSet(ctx context.Context, key, value string) error
+	RemoveFromSet(ctx context.Context, key, value string) error
+	GetSet(ctx context.Context, key string) ([]string, error)
 }
 
 type UserRepository interface {

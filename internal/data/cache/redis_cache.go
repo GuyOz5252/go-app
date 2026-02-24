@@ -25,3 +25,15 @@ func (c *RedisCache) DeleteKey(ctx context.Context, key string) error {
 func (c *RedisCache) KeyExists(ctx context.Context, key string) (bool, error) {
 	panic("unimplemented")
 }
+
+func (c *RedisCache) AddToSet(ctx context.Context, key, value string) error {
+	panic("unimplemented")
+}
+
+func (c *RedisCache) RemoveFromSet(ctx context.Context, key, value string) error {
+	panic("unimplemented")
+}
+
+func (c *RedisCache) GetSet(ctx context.Context, key string) ([]string, error) {
+	panic("unimplemented")
+}

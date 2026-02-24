@@ -61,12 +61,13 @@ func newApplication() (*application, error) {
 
 	cache := cache.NewRedisCache()
 	presenceService := services.NewPresenceService(cache)
+	userConnectionsService := services.NewUserConnectionsService(cache)
 
 	chatRepository := data.NewSqlChatRepository(db, config.Queries.Chat)
 	chatService := services.NewChatService(chatRepository)
 	chatHandler := handlers.NewChatHandler(chatService)
 
-	hub := websocket.NewHub(chatService, presenceService)
+	hub := websocket.NewHub(chatService, presenceService, userConnectionsService)
 	go hub.Run()
 	
 	websocketHandler := handlers.NewWebSocketHandler(hub)

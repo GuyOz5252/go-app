@@ -9,21 +9,23 @@ import (
 )
 
 type Hub struct {
-	chatService     *services.ChatService
-	presenceService *services.PresenceService
-	mutex           sync.RWMutex
-	clients         map[string]map[*Client]bool
-	Register        chan *Client
-	Unregister      chan *Client
+	chatService            *services.ChatService
+	presenceService        *services.PresenceService
+	userConnectionsService *services.UserConnectionsService
+	mutex                  sync.RWMutex
+	clients                map[string]map[*Client]bool
+	Register               chan *Client
+	Unregister             chan *Client
 }
 
-func NewHub(chatService *services.ChatService, presenceService *services.PresenceService) *Hub {
+func NewHub(chatService *services.ChatService, presenceService *services.PresenceService, userConnectionsService *services.UserConnectionsService) *Hub {
 	return &Hub{
-		chatService:     chatService,
-		presenceService: presenceService,
-		clients:         make(map[string]map[*Client]bool),
-		Register:        make(chan *Client),
-		Unregister:      make(chan *Client),
+		chatService:            chatService,
+		presenceService:        presenceService,
+		userConnectionsService: userConnectionsService,
+		clients:                make(map[string]map[*Client]bool),
+		Register:               make(chan *Client),
+		Unregister:             make(chan *Client),
 	}
 }
 
@@ -47,6 +49,7 @@ func (h *Hub) registerClient(client *Client) {
 		go h.presenceService.SetOnline(context.Background(), client.userId)
 	}
 	h.clients[client.userId][client] = true
+	h.userConnectionsService.SetConnection(context.Background(), client.userId, client.connection.RemoteAddr().String())
 }
 
 func (h *Hub) unregisterClient(client *Client) {
@@ -60,6 +63,7 @@ func (h *Hub) unregisterClient(client *Client) {
 			client.connection.Close()
 			if len(userClients) == 0 {
 				delete(h.clients, client.userId)
+				h.userConnectionsService.DeleteConnection(context.Background(), client.userId, client.connection.RemoteAddr().String())
 				go h.presenceService.SetOffline(context.Background(), client.userId)
 			}
 		}
@@ -70,6 +74,8 @@ func (h *Hub) sendWSMessage(userId string, wsMessage *core.WSMessage) {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
 
+	// TODO: lookup message destination if exists
+
 	if clients, ok := h.clients[userId]; ok {
 		for client := range clients {
 			select {
@@ -77,6 +83,14 @@ func (h *Hub) sendWSMessage(userId string, wsMessage *core.WSMessage) {
 			default:
 				go func() { h.Unregister <- client }()
 			}
+		}
+	}
+
+	if connections, err := h.userConnectionsService.GetUserConnections(context.Background(), userId); err != nil {
+		for _, connectionId := range connections {
+			// TODO: check if connection id is of this server
+			// TODO: forward to connected server using redis pub/sub
+			println("Connection ID:", connectionId)
 		}
 	}
 }
