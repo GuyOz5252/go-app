@@ -3,8 +3,10 @@ package data
 import (
 	"context"
 	"database/sql"
+	"strconv"
 
 	"github.com/GuyOz5252/go-app/internal/core"
+	"github.com/lib/pq"
 )
 
 type SqlChatRepository struct {
@@ -82,20 +84,51 @@ func (r *SqlChatRepository) ListByUserId(ctx context.Context, userId string) ([]
 }
 
 func (r *SqlChatRepository) Create(ctx context.Context, chat *core.Chat) (string, error) {
-	query, ok := r.queries["create"]
+	createChatQuery, ok := r.queries["create"]
 	if !ok {
 		return "", core.ErrQueryNotConfigured
 	}
+	addMembersQuery, ok := r.queries["add_members_bulk"]
+	if !ok {
+		return "", core.ErrQueryNotConfigured
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
 
 	var imageUrl sql.NullString
 	if chat.ImageUrl != "" {
 		imageUrl = sql.NullString{String: chat.ImageUrl, Valid: true}
 	}
 
-	err := r.db.QueryRowContext(ctx, query, chat.Name, imageUrl, chat.CreatedAt).Scan(&chat.Id)
+	err = tx.QueryRowContext(ctx, createChatQuery, chat.Name, imageUrl, chat.CreatedAt).Scan(&chat.Id)
 	if err != nil {
 		return "", err
 	}
+
+	if len(chat.ChatMemberIds) > 0 {
+		var memberIds []int
+		for _, stringId := range chat.ChatMemberIds {
+			id, err := strconv.Atoi(stringId)
+			if err != nil {
+				return "", err
+			}
+			memberIds = append(memberIds, id)
+		}
+
+		_, err = tx.ExecContext(ctx, addMembersQuery, chat.Id, pq.Array(memberIds), "member")
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return "", err
+	}
+
 	return chat.Id, nil
 }
 
@@ -149,7 +182,7 @@ func (r *SqlChatRepository) CreateMessage(ctx context.Context, message *core.Cha
 		replyToId = sql.NullString{String: message.ReplyToId, Valid: true}
 	}
 
-	err := r.db.QueryRowContext(ctx, query, message.Id, message.UserId, message.ChatId, message.Content, mediaUrl, replyToId, message.CreatedAt).Scan(&message.Id)
+	err := r.db.QueryRowContext(ctx, query, message.UserId, message.ChatId, message.Content, mediaUrl, replyToId, message.CreatedAt).Scan(&message.Id)
 	if err != nil {
 		return err
 	}

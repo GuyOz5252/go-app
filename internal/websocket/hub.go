@@ -2,10 +2,11 @@ package websocket
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
-	"github.com/GuyOz5252/go-app/internal/core"
 	"github.com/GuyOz5252/go-app/internal/services"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 type Hub struct {
@@ -58,19 +59,19 @@ func (h *Hub) unregisterClient(client *Client) {
 
 	if userClients, ok := h.clients[client.userId]; ok {
 		if _, ok := userClients[client]; ok {
+			h.userConnectionsService.DeleteConnection(context.Background(), client.userId, client.connection.RemoteAddr().String())
 			delete(userClients, client)
 			close(client.send)
 			client.connection.Close()
 			if len(userClients) == 0 {
 				delete(h.clients, client.userId)
-				h.userConnectionsService.DeleteConnection(context.Background(), client.userId, client.connection.RemoteAddr().String())
 				go h.presenceService.SetOffline(context.Background(), client.userId)
 			}
 		}
 	}
 }
 
-func (h *Hub) sendWSMessage(userId string, wsMessage *core.WSMessage) {
+func (h *Hub) sendWSMessage(userId string, wsMessage *WSMessage) {
 	h.mutex.RLock()
 	if clients, ok := h.clients[userId]; ok {
 		for client := range clients {
@@ -92,37 +93,39 @@ func (h *Hub) sendWSMessage(userId string, wsMessage *core.WSMessage) {
 	}
 }
 
-func (h *Hub) broadcastWSMessage(userIds []string, wsMessage *core.WSMessage) {
-	for _, userId := range userIds {
-		h.sendWSMessage(userId, wsMessage)
-	}
-}
-
 func (h *Hub) sendWSError(userId string, err error) {
-	wsErrorMessage := &core.WSMessage{
-		Type:              core.ServerError,
+	wsErrorMessage := &WSMessage{
+		Type:              ServerError,
 		DestinationUserId: userId,
-		Payload:           err.Error(),
+		Payload: &ServerErrorPayload{
+			Error: err.Error(),
+		},
 	}
 	h.sendWSMessage(userId, wsErrorMessage)
 }
 
-func (h *Hub) sendWSMessageToDestinationChat(ctx context.Context, wsMessage *core.WSMessage) {
+func (h *Hub) sendWSMessageToDestinationChat(ctx context.Context, wsMessage *WSMessage) {
 	chatMembers, err := h.chatService.GetMembers(ctx, wsMessage.DestinationChatId)
 	if err != nil {
 		h.sendWSError(wsMessage.InitiatorUserId, err)
 		return
 	}
 
-	h.broadcastWSMessage(chatMembers, wsMessage)
+	for _, userId := range chatMembers {
+		if userId == wsMessage.InitiatorUserId {
+			continue
+		}
+		h.sendWSMessage(userId, wsMessage)
+	}
 }
 
-func (h *Hub) deliverMessage(ctx context.Context, wsMessage *core.WSMessage) {
-	wsMessagePayload := wsMessage.Payload.(struct {
-		Content   string `json:"content"`
-		MediaUrl  string `json:"media_url,omitempty"`
-		ReplyToId string `json:"reply_to_id"`
-	})
+func (h *Hub) deliverMessage(ctx context.Context, wsMessage *WSMessage) {
+	var wsMessagePayload NewMessagePayload
+	err := mapstructure.Decode(wsMessage.Payload, &wsMessagePayload)
+	if err != nil {
+		h.sendWSError(wsMessage.InitiatorUserId, fmt.Errorf("invalid message payload: %v", err))
+		return
+	}
 
 	chatMessage, err := h.chatService.SendMessage(ctx, wsMessage.InitiatorUserId, wsMessage.DestinationChatId, wsMessagePayload.Content, wsMessagePayload.MediaUrl, wsMessagePayload.ReplyToId)
 	if err != nil {
@@ -130,19 +133,17 @@ func (h *Hub) deliverMessage(ctx context.Context, wsMessage *core.WSMessage) {
 		return
 	}
 
-	wsServerAckMessage := &core.WSMessage{
-		Type:              core.MessageServerAck,
+	wsServerAckMessage := &WSMessage{
+		Type:              MessageServerAck,
 		DestinationUserId: wsMessage.InitiatorUserId,
-		Payload: struct {
-			MessageId string `json:"message_id"`
-		}{
+		Payload: &MessageIdPayload{
 			MessageId: chatMessage.Id,
 		},
 	}
 	h.sendWSMessage(wsMessage.InitiatorUserId, wsServerAckMessage)
 
-	wsOutgoingMessage := &core.WSMessage{
-		Type:              core.NewMessage,
+	wsOutgoingMessage := &WSMessage{
+		Type:              NewMessage,
 		InitiatorUserId:   wsMessage.InitiatorUserId,
 		DestinationChatId: wsMessage.DestinationChatId,
 		Payload:           chatMessage,

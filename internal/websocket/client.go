@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/GuyOz5252/go-app/internal/core"
 	"github.com/gorilla/websocket"
 )
 
@@ -12,7 +11,7 @@ type Client struct {
 	userId     string
 	hub        *Hub
 	connection *websocket.Conn
-	send       chan *core.WSMessage
+	send       chan *WSMessage
 }
 
 func NewClient(userId string, hub *Hub, conn *websocket.Conn) *Client {
@@ -20,7 +19,7 @@ func NewClient(userId string, hub *Hub, conn *websocket.Conn) *Client {
 		userId:     userId,
 		hub:        hub,
 		connection: conn,
-		send:       make(chan *core.WSMessage, 10),
+		send:       make(chan *WSMessage, 10),
 	}
 }
 
@@ -35,22 +34,22 @@ func (c *Client) ReadMessages() {
 			c.hub.sendWSError(c.userId, err)
 			break
 		}
-		var wsMessage core.WSMessage
+		var wsMessage WSMessage
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
 			c.hub.sendWSError(c.userId, err)
 		} else {
 			ctx := context.Background()
 
 			switch wsMessage.Type {
-			case core.NewMessage:
+			case NewMessage:
 				c.hub.deliverMessage(ctx, &wsMessage)
-			case core.MessageUserAck:
+			case MessageUserAck:
 				c.hub.sendWSMessage(wsMessage.DestinationUserId, &wsMessage)
-			case core.MessageUserReadAck:
+			case MessageUserReadAck:
 				c.hub.sendWSMessage(wsMessage.DestinationUserId, &wsMessage)
-			case core.UserTypingStart:
+			case UserTypingStart:
 				c.hub.sendWSMessageToDestinationChat(ctx, &wsMessage)
-			case core.UserTypingEnd:
+			case UserTypingEnd:
 				c.hub.sendWSMessageToDestinationChat(ctx, &wsMessage)
 			default:
 			}

@@ -22,11 +22,11 @@ CREATE TABLE IF NOT EXISTS chat_members (
 );
 
 CREATE TABLE IF NOT EXISTS chat_messages (
-    id VARCHAR(255) PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
     chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     media_url VARCHAR(255),
-    reply_to_id VARCHAR(255) REFERENCES chat_messages(id) ON DELETE SET NULL,
+    reply_to_id UUID REFERENCES chat_messages(id) ON DELETE SET NULL,
     created_at TIMESTAMP NOT NULL
 );
