@@ -49,7 +49,7 @@ func (h *Hub) registerClient(client *Client) {
 		go h.presenceService.SetOnline(context.Background(), client.userId)
 	}
 	h.clients[client.userId][client] = true
-	h.userConnectionsService.SetConnection(context.Background(), client.userId, client.connection.RemoteAddr().String())
+	h.userConnectionsService.AddConnection(context.Background(), client.userId, client.connection.RemoteAddr().String())
 }
 
 func (h *Hub) unregisterClient(client *Client) {
@@ -72,10 +72,6 @@ func (h *Hub) unregisterClient(client *Client) {
 
 func (h *Hub) sendWSMessage(userId string, wsMessage *core.WSMessage) {
 	h.mutex.RLock()
-	defer h.mutex.RUnlock()
-
-	// TODO: lookup message destination if exists
-
 	if clients, ok := h.clients[userId]; ok {
 		for client := range clients {
 			select {
@@ -85,6 +81,7 @@ func (h *Hub) sendWSMessage(userId string, wsMessage *core.WSMessage) {
 			}
 		}
 	}
+	h.mutex.RUnlock()
 
 	if connections, err := h.userConnectionsService.GetUserConnections(context.Background(), userId); err != nil {
 		for _, connectionId := range connections {
@@ -101,52 +98,54 @@ func (h *Hub) broadcastWSMessage(userIds []string, wsMessage *core.WSMessage) {
 	}
 }
 
-func (h *Hub) sendWSError(chatId string, userId string, err error) {
+func (h *Hub) sendWSError(userId string, err error) {
 	wsErrorMessage := &core.WSMessage{
-		Type:    core.ServerError,
-		ChatId:  chatId,
-		UserId:  userId,
-		Payload: err.Error(),
+		Type:              core.ServerError,
+		DestinationUserId: userId,
+		Payload:           err.Error(),
 	}
 	h.sendWSMessage(userId, wsErrorMessage)
 }
 
-func (h *Hub) deliverMessage(ctx context.Context, wsMessage core.WSMessage) {
+func (h *Hub) sendWSMessageToDestinationChat(ctx context.Context, wsMessage *core.WSMessage) {
+	chatMembers, err := h.chatService.GetMembers(ctx, wsMessage.DestinationChatId)
+	if err != nil {
+		h.sendWSError(wsMessage.InitiatorUserId, err)
+		return
+	}
+
+	h.broadcastWSMessage(chatMembers, wsMessage)
+}
+
+func (h *Hub) deliverMessage(ctx context.Context, wsMessage *core.WSMessage) {
 	wsMessagePayload := wsMessage.Payload.(struct {
 		Content   string `json:"content"`
 		MediaUrl  string `json:"media_url,omitempty"`
 		ReplyToId string `json:"reply_to_id"`
 	})
 
-	chatMessage, err := h.chatService.SendMessage(ctx, wsMessage.UserId, wsMessage.ChatId, wsMessagePayload.Content, wsMessagePayload.MediaUrl, wsMessagePayload.ReplyToId)
+	chatMessage, err := h.chatService.SendMessage(ctx, wsMessage.InitiatorUserId, wsMessage.DestinationChatId, wsMessagePayload.Content, wsMessagePayload.MediaUrl, wsMessagePayload.ReplyToId)
 	if err != nil {
-		h.sendWSError(wsMessage.ChatId, wsMessage.UserId, err)
+		h.sendWSError(wsMessage.InitiatorUserId, err)
 		return
 	}
 
 	wsServerAckMessage := &core.WSMessage{
-		Type:   core.MessageServerAck,
-		ChatId: wsMessage.ChatId,
-		UserId: wsMessage.UserId,
+		Type:              core.MessageServerAck,
+		DestinationUserId: wsMessage.InitiatorUserId,
 		Payload: struct {
 			MessageId string `json:"message_id"`
 		}{
 			MessageId: chatMessage.Id,
 		},
 	}
-	h.sendWSMessage(wsMessage.UserId, wsServerAckMessage)
-
-	chatMembers, err := h.chatService.GetMembers(ctx, wsMessage.ChatId)
-	if err != nil {
-		h.sendWSError(wsMessage.ChatId, wsMessage.UserId, err)
-		return
-	}
+	h.sendWSMessage(wsMessage.InitiatorUserId, wsServerAckMessage)
 
 	wsOutgoingMessage := &core.WSMessage{
-		Type:    core.NewMessage,
-		UserId:  wsMessage.UserId,
-		ChatId:  wsMessage.ChatId,
-		Payload: chatMessage,
+		Type:              core.NewMessage,
+		InitiatorUserId:   wsMessage.InitiatorUserId,
+		DestinationChatId: wsMessage.DestinationChatId,
+		Payload:           chatMessage,
 	}
-	h.broadcastWSMessage(chatMembers, wsOutgoingMessage)
+	h.sendWSMessageToDestinationChat(ctx, wsOutgoingMessage)
 }

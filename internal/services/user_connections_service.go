@@ -17,7 +17,7 @@ func NewUserConnectionsService(cache core.Cache) *UserConnectionsService {
 	}
 }
 
-func (s *UserConnectionsService) SetConnection(ctx context.Context, userId, connectionId string) error {
+func (s *UserConnectionsService) AddConnection(ctx context.Context, userId, connectionId string) error {
 	key := fmt.Sprintf("connection:%s", userId)
 	return s.cache.AddToSet(ctx, key, connectionId)
 }

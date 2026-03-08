@@ -32,18 +32,26 @@ func (c *Client) ReadMessages() {
 	for {
 		_, messageBytes, err := c.connection.ReadMessage()
 		if err != nil {
-			c.hub.sendWSError("", c.userId, err)
+			c.hub.sendWSError(c.userId, err)
 			break
 		}
 		var wsMessage core.WSMessage
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
-			c.hub.sendWSError("", c.userId, err)
+			c.hub.sendWSError(c.userId, err)
 		} else {
 			ctx := context.Background()
 
 			switch wsMessage.Type {
 			case core.NewMessage:
-				c.hub.deliverMessage(ctx, wsMessage)
+				c.hub.deliverMessage(ctx, &wsMessage)
+			case core.MessageUserAck:
+				c.hub.sendWSMessage(wsMessage.DestinationUserId, &wsMessage)
+			case core.MessageUserReadAck:
+				c.hub.sendWSMessage(wsMessage.DestinationUserId, &wsMessage)
+			case core.UserTypingStart:
+				c.hub.sendWSMessageToDestinationChat(ctx, &wsMessage)
+			case core.UserTypingEnd:
+				c.hub.sendWSMessageToDestinationChat(ctx, &wsMessage)
 			default:
 			}
 		}
