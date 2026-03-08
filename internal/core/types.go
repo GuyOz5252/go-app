@@ -3,15 +3,49 @@ package core
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 var ErrNotFound = errors.New("not found")
+var ErrUnautherized = errors.New("unautherized")
 var ErrQueryNotConfigured = errors.New("query not configured")
 var ErrUsernameConflict = errors.New("username already exists")
 var ErrEmailConflict = errors.New("email already exists")
 var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrMustHaveMoreThanOneMember = errors.New("chat must have more than one member")
 var ErrUserIsAlreadyInChat = errors.New("user is already in chat")
+
+type WSMessage struct {
+	Type              WSMessageType `json:"message_type"`
+	InitiatorUserId   string        `json:"initiator_user_id,omitempty"`
+	DestinationChatId string        `json:"destination_chat_id,omitempty"`
+	DestinationUserId string        `json:"destination_user_id,omitempty"`
+	Payload           any           `json:"payload,omitempty"`
+}
+
+type WSMessageType int
+
+const (
+	NewMessage WSMessageType = iota
+	MessageServerAck
+	MessageUserAck
+	MessageUserReadAck
+	UserTypingStart
+	UserTypingEnd
+	UserOnline
+	UserOffline
+	UserAway
+	ServerError
+)
+
+type Cache interface {
+	SetKey(ctx context.Context, key string, ttl time.Duration) error
+	DeleteKey(ctx context.Context, key string) error
+	KeyExists(ctx context.Context, key string) (bool, error)
+	AddToSet(ctx context.Context, key, value string) error
+	RemoveFromSet(ctx context.Context, key, value string) error
+	GetSet(ctx context.Context, key string) ([]string, error)
+}
 
 type UserRepository interface {
 	GetById(ctx context.Context, id string) (*User, error)
@@ -30,4 +64,7 @@ type ChatRepository interface {
 	AddMember(ctx context.Context, chatId, userId string) error
 	RemoveMember(ctx context.Context, chatId, userId string) error
 	IsMemberInChat(ctx context.Context, chatId, userId string) (bool, error)
+	CreateMessage(ctx context.Context, message *ChatMessage) error
+	GetMessages(ctx context.Context, chatId string, limit, offset int) ([]*ChatMessage, error)
+	GetMembers(ctx context.Context, chatId string) ([]string, error)
 }

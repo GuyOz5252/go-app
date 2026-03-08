@@ -26,7 +26,7 @@ func (s *ChatService) ListByUserId(ctx context.Context, userId string) ([]*core.
 }
 
 func (s *ChatService) Create(ctx context.Context, name string, chatMemberIds []string, imageUrl string) (string, error) {
-	if (len(chatMemberIds) <= 1) {
+	if len(chatMemberIds) <= 1 {
 		return "", core.ErrMustHaveMoreThanOneMember
 	}
 	chat := &core.Chat{
@@ -47,4 +47,34 @@ func (s *ChatService) AddMember(ctx context.Context, chatId, userId string) erro
 		return core.ErrUserIsAlreadyInChat
 	}
 	return s.chatRepository.AddMember(ctx, chatId, userId)
+}
+
+func (s *ChatService) SendMessage(ctx context.Context, userId, chatId, content string, mediaUrl string, replyToId string) (*core.ChatMessage, error) {
+	isMember, err := s.chatRepository.IsMemberInChat(ctx, chatId, userId)
+	if err != nil {
+		return nil, err
+	}
+	if !isMember {
+		return nil, core.ErrUnautherized
+	}
+
+	chatMessage := &core.ChatMessage{
+		UserId:    userId,
+		ChatId:    chatId,
+		Content:   content,
+		MediaUrl:  mediaUrl,
+		ReplyToId: replyToId,
+		CreatedAt: time.Now().UTC(),
+	}
+
+	err = s.chatRepository.CreateMessage(ctx, chatMessage)
+	if err != nil {
+		return nil, err
+	}
+
+	return chatMessage, nil
+}
+
+func (s *ChatService) GetMembers(ctx context.Context, chatId string) ([]string, error) {
+	return s.chatRepository.GetMembers(ctx, chatId)
 }

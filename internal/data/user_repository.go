@@ -10,10 +10,10 @@ import (
 
 type SqlUserRepository struct {
 	db      *sql.DB
-	queries *map[string]string
+	queries map[string]string
 }
 
-func NewSqlUserRepository(db *sql.DB, queries *map[string]string) core.UserRepository {
+func NewSqlUserRepository(db *sql.DB, queries map[string]string) core.UserRepository {
 	return &SqlUserRepository{
 		db:      db,
 		queries: queries,
@@ -22,7 +22,7 @@ func NewSqlUserRepository(db *sql.DB, queries *map[string]string) core.UserRepos
 
 func (r *SqlUserRepository) GetById(ctx context.Context, id string) (*core.User, error) {
 	user := &core.User{}
-	query, ok := (*r.queries)["get_by_id"]
+	query, ok := r.queries["get_by_id"]
 	if !ok {
 		return nil, core.ErrQueryNotConfigured
 	}
@@ -38,7 +38,7 @@ func (r *SqlUserRepository) GetById(ctx context.Context, id string) (*core.User,
 
 func (r *SqlUserRepository) Create(ctx context.Context, user *core.User) (string, error) {
 	var userId string
-	query, ok := (*r.queries)["create"]
+	query, ok := r.queries["create"]
 	if !ok {
 		return "", core.ErrQueryNotConfigured
 	}
@@ -55,7 +55,7 @@ func (r *SqlUserRepository) Update(ctx context.Context, user *core.User) error {
 	}
 
 	var userId int
-	query, ok := (*r.queries)["update"]
+	query, ok := r.queries["update"]
 	if !ok {
 		return core.ErrQueryNotConfigured
 	}
@@ -69,7 +69,7 @@ func (r *SqlUserRepository) Update(ctx context.Context, user *core.User) error {
 
 func (r *SqlUserRepository) Delete(ctx context.Context, id string) error {
 	var userId string
-	query, ok := (*r.queries)["delete"]
+	query, ok := r.queries["delete"]
 	if !ok {
 		return core.ErrQueryNotConfigured
 	}
@@ -83,7 +83,7 @@ func (r *SqlUserRepository) Delete(ctx context.Context, id string) error {
 
 func (r *SqlUserRepository) ExistsByUsername(ctx context.Context, username string) (bool, error) {
 	var exists bool
-	query, ok := (*r.queries)["exists_by_username"]
+	query, ok := r.queries["exists_by_username"]
 	if !ok {
 		return false, core.ErrQueryNotConfigured
 	}
@@ -97,7 +97,7 @@ func (r *SqlUserRepository) ExistsByUsername(ctx context.Context, username strin
 
 func (r *SqlUserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	var exists bool
-	query, ok := (*r.queries)["exists_by_email"]
+	query, ok := r.queries["exists_by_email"]
 	if !ok {
 		return false, core.ErrQueryNotConfigured
 	}
@@ -111,7 +111,7 @@ func (r *SqlUserRepository) ExistsByEmail(ctx context.Context, email string) (bo
 
 func (r *SqlUserRepository) GetByEmail(ctx context.Context, email string) (*core.User, error) {
 	user := &core.User{}
-	query, ok := (*r.queries)["get_by_email"]
+	query, ok := r.queries["get_by_email"]
 	if !ok {
 		return nil, core.ErrQueryNotConfigured
 	}

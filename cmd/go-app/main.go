@@ -1,14 +1,17 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/GuyOz5252/go-app/internal/data"
+	"github.com/GuyOz5252/go-app/internal/data/cache"
 	"github.com/GuyOz5252/go-app/internal/handlers"
 	"github.com/GuyOz5252/go-app/internal/services"
+	"github.com/GuyOz5252/go-app/internal/websocket"
 	"github.com/GuyOz5252/go-app/pkg"
 	"github.com/go-chi/jwtauth/v5"
 )
@@ -26,6 +29,17 @@ type Config struct {
 	} `mapstructure:"queries"`
 }
 
+type application struct {
+	config           *Config
+	logger           *slog.Logger
+	db               *sql.DB
+	tokenAuth        *jwtauth.JWTAuth
+	healthHandler    *handlers.HealthHandler
+	userHandler      *handlers.UserHandler
+	chatHandler      *handlers.ChatHandler
+	websocketHandler *handlers.WebSocketHandler
+}
+
 func newApplication() (*application, error) {
 	config, err := pkg.LoadConfig[Config]("../../config")
 	if err != nil {
@@ -41,17 +55,32 @@ func newApplication() (*application, error) {
 
 	healthHandler := handlers.NewHealthHandler()
 
-	userRepository := data.NewSqlUserRepository(db, &config.Queries.User)
+	userRepository := data.NewSqlUserRepository(db, config.Queries.User)
 	userService := services.NewUserService(userRepository)
 	userHandler := handlers.NewUserHandler(userService, tokenAuth, config.Auth.TokenExpiration)
 
+	cache := cache.NewRedisCache()
+	presenceService := services.NewPresenceService(cache)
+	userConnectionsService := services.NewUserConnectionsService(cache)
+
+	chatRepository := data.NewSqlChatRepository(db, config.Queries.Chat)
+	chatService := services.NewChatService(chatRepository)
+	chatHandler := handlers.NewChatHandler(chatService)
+
+	hub := websocket.NewHub(chatService, presenceService, userConnectionsService)
+	go hub.Run()
+	
+	websocketHandler := handlers.NewWebSocketHandler(hub)
+
 	app := &application{
-		config:        config,
-		logger:        pkg.NewLogger(),
-		db:            db,
-		tokenAuth:     tokenAuth,
-		healthHandler: healthHandler,
-		userHandler:   userHandler,
+		config:           config,
+		logger:           pkg.NewLogger(),
+		db:               db,
+		tokenAuth:        tokenAuth,
+		healthHandler:    healthHandler,
+		userHandler:      userHandler,
+		chatHandler:      chatHandler,
+		websocketHandler: websocketHandler,
 	}
 
 	return app, nil
