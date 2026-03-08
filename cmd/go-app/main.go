@@ -23,6 +23,10 @@ type Config struct {
 		JWTSecret       string        `mapstructure:"jwt-secret"`
 		TokenExpiration time.Duration `mapstructure:"token-expiration"`
 	} `mapstructure:"auth"`
+	Redis struct {
+		Address  string `mapstructure:"address"`
+		Password string `mapstructure:"password"`
+	} `mapstructure:"redis"`
 	Queries struct {
 		User map[string]string `mapstructure:"user"`
 		Chat map[string]string `mapstructure:"chat"`
@@ -59,7 +63,7 @@ func newApplication() (*application, error) {
 	userService := services.NewUserService(userRepository)
 	userHandler := handlers.NewUserHandler(userService, tokenAuth, config.Auth.TokenExpiration)
 
-	cache := cache.NewRedisCache()
+	cache := cache.NewRedisCache(config.Redis.Address, config.Redis.Password)
 	presenceService := services.NewPresenceService(cache)
 	userConnectionsService := services.NewUserConnectionsService(cache)
 
@@ -69,7 +73,7 @@ func newApplication() (*application, error) {
 
 	hub := websocket.NewHub(chatService, presenceService, userConnectionsService)
 	go hub.Run()
-	
+
 	websocketHandler := handlers.NewWebSocketHandler(hub)
 
 	app := &application{
