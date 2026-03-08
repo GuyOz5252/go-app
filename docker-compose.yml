@@ -10,3 +10,10 @@ services:
       POSTGRES_PASSWORD: Password1
     ports:
       - "5432:5432"
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
