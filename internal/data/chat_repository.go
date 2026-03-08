@@ -75,6 +75,9 @@ func (r *SqlChatRepository) ListByUserId(ctx context.Context, userId string) ([]
 		return nil, err
 	}
 
+	if chats == nil {
+		chats = make([]*core.ChatDto, 0)
+	}
 	return chats, nil
 }
 

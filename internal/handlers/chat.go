@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/GuyOz5252/go-app/internal/core"
 	"github.com/GuyOz5252/go-app/internal/services"
 	results "github.com/GuyOz5252/go-app/pkg/api"
 	"github.com/go-chi/chi/v5"
@@ -39,6 +40,10 @@ func (h *ChatHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.chatService.Create(r.Context(), req.Name, req.ChatMemberIds, req.ImageUrl)
 	if err != nil {
+		if err == core.ErrMustHaveMoreThanOneMember {
+			results.ApiError(w, r, http.StatusBadRequest, "failed to create chat", err.Error())
+			return
+		}
 		results.ApiError(w, r, http.StatusInternalServerError, "failed to create chat", err.Error())
 		return
 	}
