@@ -15,29 +15,6 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrMustHaveMoreThanOneMember = errors.New("chat must have more than one member")
 var ErrUserIsAlreadyInChat = errors.New("user is already in chat")
 
-type WSMessage struct {
-	Type              WSMessageType `json:"message_type"`
-	InitiatorUserId   string        `json:"initiator_user_id,omitempty"`
-	DestinationChatId string        `json:"destination_chat_id,omitempty"`
-	DestinationUserId string        `json:"destination_user_id,omitempty"`
-	Payload           any           `json:"payload,omitempty"`
-}
-
-type WSMessageType int
-
-const (
-	NewMessage WSMessageType = iota
-	MessageServerAck
-	MessageUserAck
-	MessageUserReadAck
-	UserTypingStart
-	UserTypingEnd
-	UserOnline
-	UserOffline
-	UserAway
-	ServerError
-)
-
 type Cache interface {
 	SetKey(ctx context.Context, key string, ttl time.Duration) error
 	DeleteKey(ctx context.Context, key string) error

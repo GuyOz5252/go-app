@@ -30,12 +30,14 @@ var upgrader = websocket.Upgrader{
 func (h *WebSocketHandler) ServeWebSocket(w http.ResponseWriter, r *http.Request) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
 	if claims == nil {
+		w.Header().Set("Reason", "No Claims provided")
 		results.ApiError(w, r, http.StatusUnauthorized, "unauthorized", "no claims provided")
 		return
 	}
 
 	userId, ok := claims["userId"].(string)
 	if !ok || userId == "" {
+		w.Header().Set("Reason", "No userId provided")
 		results.ApiError(w, r, http.StatusUnauthorized, "unauthorized", "no userId provided")
 		return
 	}

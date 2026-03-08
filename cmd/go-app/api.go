@@ -15,7 +15,6 @@ func (app *application) mount() http.Handler {
 	mux.Use(middleware.Recoverer)
 
 	mux.Get("/", app.healthHandler.Check)
-	mux.Get("/ws", app.websocketHandler.ServeWebSocket)
 
 	mux.Route("/api", func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
@@ -34,6 +33,7 @@ func (app *application) mount() http.Handler {
 			r.Use(jwtauth.Verifier(app.tokenAuth))
 			r.Use(jwtauth.Authenticator(app.tokenAuth))
 
+			r.Get("/ws", app.websocketHandler.ServeWebSocket)
 			r.Post("/", app.chatHandler.Create)
 			r.Get("/", app.chatHandler.List)
 			r.Post("/{chatId}/messages", app.chatHandler.SendMessage)

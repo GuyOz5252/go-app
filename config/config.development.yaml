@@ -2,3 +2,6 @@ connection-string: 'postgres://go-app-server:Password1@localhost:5432/go-app-db?
 auth:
   jwt-secret: 'super-secret-key-change-me'
   token-expiration: '72h'
+redis:
+  address: 'localhost:6379'
+  password: ''
